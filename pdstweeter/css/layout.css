@@ -1,0 +1,59 @@
+body {
+	background: #FFF;
+}
+#cont-page {
+	height: auto;
+	width: 800px;
+	margin: 50px auto;
+	border: 2px groove #C8B7B7;
+	background: #F2F1F0;
+}
+#cont-login {
+	height: 180px;
+	width: 500px;
+	border: 2px groove #C8B7B7;
+	margin: 20px auto;
+	padding-top: 10px;
+}
+#cont-signup {
+	height: 300px;
+	width: 500px;
+	border: 2px groove #C8B7B7;
+	margin: 20px auto;
+	padding-top: 10px;
+}
+#logo {
+	height: 33px;
+	width: 100px;
+}
+#cont-home{
+	height:1000px;
+	width: 95%;
+	margin: 5px auto;
+}
+.title {
+	margin: 5px;
+	padding-left: 40%;
+	color: #000;
+}
+.inputrow {
+	width: 80%;
+	height: 50px;
+	margin: 0px auto;
+}
+.textinput {
+	float: left;
+	height: 25px;
+	width: 250px;
+	margin: 2px auto;
+	float: right;
+}
+.button {
+	height: 35px;
+	width: 100px;
+	margin-left: 40%;
+}
+.field {
+	margin: 10px;
+	float: left;
+}
