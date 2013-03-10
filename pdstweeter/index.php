@@ -1,3 +1,6 @@
+<?php
+ob_start();
+?>
 <!DOCTYPE html>
 <html>
 	<head>
@@ -8,8 +11,8 @@
 	<body>
 		<div id="cont-page">
 			<?php
-				include_once ('signup.php');
-				include_once ('login.php');
+			include_once ('login.php');
+			include_once ('signup.php');
 			?>
 			<div id="cont-login">
 				<form method="post" action="index.php">
