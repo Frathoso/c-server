@@ -43,7 +43,7 @@ if (isset($_POST[KEY_TWEET]) && isset($_SESSION[KEY_EMAIL])) {
 				<div id="home-body">
 					<div id="home-new-tweet">
 						<form method="post" action="home.php">
-							<input type="text" id="new-tweet" name="tweet" min="1" max="160">
+							<input type="text" id="new-tweet" name="tweet" min="1" max="140" required>
 							<input type="submit" value="Tweet" class="button">
 						</form>
 					</div>
