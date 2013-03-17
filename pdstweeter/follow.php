@@ -15,8 +15,6 @@ define("KEY_QUERY", 'query');
 define("KEY_FOLLOW_USER", 'followuser');
 define("KEY_USER_TO_FOLLOW", 'usertofollow');
 define("KEY_EMAIL", 'email');
-define("KEY_FIRST_NAME", 'firstName');
-define("KEY_LAST_NAME", 'lastName');
 
 session_start();
 
@@ -40,8 +38,8 @@ if (isset($_POST[KEY_QUERY])) {
 					$_SESSION[KEY_USER_TO_FOLLOW] = $reqArray[1];
 				}
 			}
-		}else{
-			echo "Error Connecting: ".$errNo.": ".$errStr;
+		} else {
+			echo "Error Connecting: " . $errNo . ": " . $errStr;
 		}
 	} catch(exception $ex) {
 		echo "<br> Error: " . $ex;
@@ -49,20 +47,27 @@ if (isset($_POST[KEY_QUERY])) {
 }
 
 // Follow user
-if (isset($_POST[KEY_FOLLOW_USER]) && isset($_SESSION[KEY_USER_TO_FOLLOW])) {
+if (isset($_POST[KEY_FOLLOW_USER]) && isset($_SESSION[KEY_EMAIL]) && isset($_SESSION[KEY_USER_TO_FOLLOW])) {
 	// TODO: check if the user is already followed
 
 	try {
 		// Connect to the remote host
 		$errNo = $errStr = "";
+		$fp = stream_socket_client(SERVER_ADDR . ":" . SERVER_PORT, $errNo, $errStr);
+		if ($fp) {
+			// Send request to retrieve user details (email)
+			$request = FOLLOW_USER . DELIMINATER . $_SESSION[KEY_EMAIL] . DELIMINATER . $_SESSION[KEY_USER_TO_FOLLOW];
+			fputs($fp, $request, strlen($request));
+
+			// Analyse server's response
+			$results = trim(fgets($fp));
+			fclose($fp);
+		} else {
+			echo "Error Connecting: " . $errNo . ": " . $errStr;
+		}
 	} catch(exception $ex) {
-		echo "<br> Connection Error: " . $ex;
+		echo "<br> Error: " . $ex;
 	}
-	$fileName = $_SESSION[KEY_EMAIL];
-	$fileFollow = fopen(DATA_ROOT . $fileName . FOLLOW_EXT, 'a');
-	fwrite($fileFollow, $_SESSION[KEY_USER_TO_FOLLOW]);
-	fwrite($fileFollow, "\n");
-	fclose($fileFollow);
 
 	unset($_SESSION[KEY_USER_TO_FOLLOW]);
 }
@@ -95,11 +100,11 @@ if (isset($_POST[KEY_FOLLOW_USER]) && isset($_SESSION[KEY_USER_TO_FOLLOW])) {
 						} else if (isset($_POST[KEY_QUERY])) {
 							echo "User not available";
 						}
-					?>
-</div>
+						?>
+					</div>
 
-</div>
-</div>
-</div>
-</body>
+				</div>
+			</div>
+		</div>
+	</body>
 </html>

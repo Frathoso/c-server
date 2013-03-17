@@ -35,7 +35,7 @@
 #define ADD_USER            "ADDUSR"
 #define REMOVE_USER         "REMUSR"
 #define FOLLOW_USER         "FOLUSR"
-#define UNFOLOW_USER        "UNFUSR"
+#define UNFOLLOW_USERS      "UNFUSR"
 #define GET_USER            "GETUSR"
 #define GET_USER_TWEETS     "GETTWT"
 #define PUT_USER_TWEET      "PUTTWT"
@@ -51,7 +51,7 @@ void authenticate_user(char*, char*);
 void add_user(char*, char*);
 void remove_user(char*, char*);
 void follow_user(char*, char*);
-void unfollow_user(char*, char*);
+void unfollow_users(char*, char*);
 void get_user(char*, char*);
 void get_user_tweets(char*, char*);
 void put_user_tweet(char*, char*);
@@ -59,6 +59,7 @@ void get_followed_users(char*, char*);
 void unknown_request(char*);
 void explode(char*, char*, char[][MAX_ENTITY_LENGTH]);
 void lower_case(char[]);
+void trim(char*);
 
 // Main function
 int main(int argc, char* argv[])
@@ -112,8 +113,8 @@ int main(int argc, char* argv[])
                 remove_user(request, response);
             else if( strcmp(header, FOLLOW_USER) == 0)
                 follow_user(request, response);
-            else if( strcmp(header, UNFOLOW_USER) == 0)
-                unfollow_user(request, response);
+            else if( strcmp(header, UNFOLLOW_USERS) == 0)
+                unfollow_users(request, response);
             else if( strcmp(header, GET_USER) == 0)
                 get_user(request, response);
             else if( strcmp(header, GET_USER_TWEETS) == 0)
@@ -145,7 +146,6 @@ void log_error(char* msg)
 // Check if user and password are valid
 void  authenticate_user(char* request, char* response)
 {
-    int pos = 0;
     char data[MAX_REQUEST_ENTITIES][MAX_ENTITY_LENGTH];
     bzero(data, sizeof(data));
     explode(request, DELIMINATER, data);
@@ -174,11 +174,13 @@ void  authenticate_user(char* request, char* response)
                         strcpy(response, AUTHENTICATE_USER);
                         strcat(response, DELIMINATER);
                         strcat(response, SUCCESS);
+                        fclose(file);
                         return;
                     }
                 }
                 fgets(line,MAX_ENTITY_LENGTH, file);
             }
+            fclose(file);
         }
     }
     strcpy(response, AUTHENTICATE_USER);
@@ -201,19 +203,90 @@ void  remove_user(char* request, char* response)
 // Follow the given user
 void  follow_user(char* request, char* response)
 {
+    char data[MAX_REQUEST_ENTITIES][MAX_ENTITY_LENGTH];
+    bzero(data, sizeof(data));
+    explode(request, DELIMINATER, data);
+    if( data[1] != NULL && data[2] != NULL)
+    {
+        char file_name[MAX_ENTITY_LENGTH];
+        strcpy(file_name, DATA_ROOT);
+        strcat(file_name, data[1]);
+        strcat(file_name, FOLLOW_EXT);
+        FILE* file = fopen(file_name, "a");
 
+        if(file)
+        {
+            fputs(data[2], file);
+            fputs("\n", file);
+            fclose(file);
+        }
+    }
+    strcpy(response, FOLLOW_USER);
+    strcat(response, DELIMINATER);
+    strcat(response, SUCCESS);
 }
 
 // Remove user from the followed list
-void  unfollow_user(char* request, char* response)
+void  unfollow_users(char* request, char* response)
 {
+    char data[MAX_REQUEST_ENTITIES][MAX_ENTITY_LENGTH];
+    char new_data[MAX_REQUEST_ENTITIES][MAX_ENTITY_LENGTH];
+    bzero(data, sizeof(data));
+    bzero(new_data, sizeof(new_data));
+    explode(request, DELIMINATER, data);
+    int pos = 0, following = 0;
+    if( data[0] != NULL && data[1] != NULL)
+    {
+        char file_name[MAX_ENTITY_LENGTH];
+        strcpy(file_name, DATA_ROOT);
+        strcat(file_name, data[1]);
+        strcat(file_name, FOLLOW_EXT);
+        FILE* file = fopen(file_name, "r");
 
+        if(file)
+        {
+            // Read old contents and remove the submitted users
+            char line[MAX_ENTITY_LENGTH];
+            bzero(line, sizeof(line));
+            fgets(line,MAX_ENTITY_LENGTH, file);
+            while(!feof(file))
+            {
+                trim(line);
+                if(strlen(line) > 5)
+                {
+                    int K = 2;
+                    while(TRUE)
+                    {
+                        if(strlen(data[K]) < 5) break;
+                        if(strcmp(line, data[K++]) != 0)
+                        {
+                            strcpy(new_data[pos++], line);
+                            break;
+                        }
+                    }
+                }
+                fgets(line,MAX_ENTITY_LENGTH, file);
+            }
+            fclose(file);
+        }
+
+        file = fopen(file_name, "w");
+        int K=0;
+        while(K < pos)
+        {
+            fputs(new_data[K++], file);
+            fputs("\n", file);
+        }
+        fclose(file);
+    }
+    strcpy(response, UNFOLLOW_USERS);
+    strcat(response, DELIMINATER);
+    strcat(response, SUCCESS);
 }
 
 // Pull all tweets for the user
 void  get_user(char* request, char* response)
 {
-    int pos = 0;
     char data[MAX_REQUEST_ENTITIES][MAX_ENTITY_LENGTH];
     bzero(data, sizeof(data));
     explode(request, DELIMINATER, data);
@@ -244,11 +317,13 @@ void  get_user(char* request, char* response)
                         strcpy(response, GET_USER);
                         strcat(response, DELIMINATER);
                         strcat(response, user[0]);
+                        fclose(file);
                         return;
                     }
                 }
                 fgets(line,MAX_ENTITY_LENGTH, file);
             }
+            fclose(file);
         }
     }
     strcpy(response, GET_USER);
@@ -271,7 +346,31 @@ void  put_user_tweet(char* request, char* response)
 // Retrieve all users followed by the user
 void get_followed_users(char* request, char* response)
 {
+    char data[MAX_REQUEST_ENTITIES][MAX_ENTITY_LENGTH];
+    bzero(data, sizeof(data));
+    explode(request, DELIMINATER, data);
+    if( data[0] != NULL && data[1] != NULL)
+    {
+        char file_name[MAX_ENTITY_LENGTH];
+        strcpy(file_name, DATA_ROOT);
+        strcat(file_name, data[1]);
+        strcat(file_name, FOLLOW_EXT);
+        FILE* file = fopen(file_name, "r");
 
+        if(file)
+        {
+            char line[MAX_ENTITY_LENGTH];
+            fgets(line,MAX_ENTITY_LENGTH, file);
+            strcpy(response, GET_FOLLOWED_USERS);
+            while(!feof(file))
+            {
+                strcat(response, DELIMINATER);
+                strcat(response, line);
+                fgets(line,MAX_ENTITY_LENGTH, file);
+            }
+            fclose(file);
+        }
+    }
 }
 
 // Respond to the unknown request
@@ -297,4 +396,11 @@ void lower_case(char line[MAX_ENTITY_LENGTH])
 {
     int K = 0;
     while(K++ < MAX_ENTITY_LENGTH) line[K] = tolower(line[K]);
+}
+
+// Remove whitespace from string
+void trim(char* str)
+{
+    int K = strlen(str) - 1;
+    while(isspace(str[K])) str[K--] = '\0';
 }
