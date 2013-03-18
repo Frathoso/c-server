@@ -1,11 +1,5 @@
 <?php
-define("DATA_ROOT", '../tweeter-data/');
-define("KEY_FIRST_NAME", 'firstName');
-define("KEY_LAST_NAME", 'lastName');
-define("KEY_EMAIL", 'email');
-define("KEY_TWEET", 'tweet');
-define("FOLLOW_EXT", '.follow');
-define("TWEETS_EXT", '.tweets');
+include_once('protocol.php');
 
 session_start();
 

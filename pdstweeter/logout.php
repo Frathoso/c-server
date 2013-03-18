@@ -1,7 +1,8 @@
 <?php
 ob_start();
 
-define("LOGIN_PAGE", 'index.php');
+include_once ('protocol.php');
+
 session_start();
 
 // Terminates the session and redirects to the login page

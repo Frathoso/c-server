@@ -1,20 +1,5 @@
 <?php
-// Server details
-define("SERVER_PORT", 8888);
-define("SERVER_ADDR", 'tcp://localhost');
-define("BUFFER_SIZE", 8192);
-define("HOME_PAGE", 'home.php');
-
-// Keys for identifying data
-define("KEY_EMAIL", 'email');
-define("KEY_PASSWORD", 'password');
-define("KEY_FIRST_NAME", 'firstName');
-define("KEY_LAST_NAME", 'lastName');
-
-// Protocol keywords
-define("SUCCESS", 'YES');
-define("AUTHENTICATE_USER", 'AUTUSR');
-define("DELIMINATER", '~');
+include_once('protocol.php');
 
 $loginEmail = "";
 

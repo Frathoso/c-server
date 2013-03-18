@@ -1,17 +1,5 @@
 <?php
-// Server details
-define("SERVER_PORT", 8888);
-define("SERVER_ADDR", 'tcp://localhost');
-define("BUFFER_SIZE", 8192);
-
-// Protocol keywords
-define("UNFOLLOW_USER", 'UNFUSR');
-define("GET_FOLLOWED_USERS", 'GETFOL');
-define("DELIMINATER", '~');
-define("FAILURE", 'NO');
-
-define("KEY_EMAIL", 'email');
-define("KEY_UNFOLLOW", 'unfollow');
+include_once('protocol.php');
 
 session_start();
 

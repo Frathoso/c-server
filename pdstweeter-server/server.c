@@ -18,8 +18,9 @@
 #define MAX_TWEETS           10
 #define HEADER_SIZE          6
 #define MAX_REQUEST_ENTITIES 5
-#define MAX_ENTITY_LENGTH    80
-#define USER_DETAILS         4
+#define MAX_ENTITY_LENGTH    160
+#define MAX_USER_DETAILS     4
+#define VALID_MINIMUM_DATA   5
 
 // Server details
 #define TOTAL_CLIENTS   50
@@ -29,6 +30,7 @@
 #define USERS_FILENAME  "users"
 #define FOLLOW_EXT      ".follow"
 #define TWEETS_EXT      ".tweets"
+#define FILE_MODE       0777
 
 // Protocol constants
 #define AUTHENTICATE_USER   "AUTUSR"
@@ -82,7 +84,7 @@ int main(int argc, char* argv[])
         log_error("Binding server address");
 
     // Start listening for clients
-    while(1)
+    while(TRUE)
     {
         listen(server_fd, TOTAL_CLIENTS);
 
@@ -98,7 +100,7 @@ int main(int argc, char* argv[])
         if(read(cli_fd, request, BUFFER_SIZE))
         {
             // Analyse and respond to the request
-            //printf("Received: (%s)(%d)\n", request, strlen(request));
+            printf("REQUEST [%d](%s) ---> ", strlen(request), request);
             char header[HEADER_SIZE+1];
             bzero(header, sizeof(header));
             strncpy(header, request, HEADER_SIZE);
@@ -126,7 +128,7 @@ int main(int argc, char* argv[])
             else
                 unknown_request(response);
 
-            printf("REPLY: %s\n", response);
+            printf("RESPONSE [%d](%s)\n\n", strlen(response), response);
 
             if(write(cli_fd, response, strlen(response)) < 0 ) log_error("Replying to client");
         }
@@ -159,7 +161,7 @@ void  authenticate_user(char* request, char* response)
         if(file)
         {
             char line[MAX_ENTITY_LENGTH];
-            char user[USER_DETAILS][MAX_ENTITY_LENGTH];
+            char user[MAX_USER_DETAILS][MAX_ENTITY_LENGTH];
             fgets(line,MAX_ENTITY_LENGTH, file);
 
             while(!feof(file))
@@ -191,13 +193,148 @@ void  authenticate_user(char* request, char* response)
 // Add new user if not existing
 void  add_user(char* request, char* response)
 {
+    char data[MAX_REQUEST_ENTITIES][MAX_ENTITY_LENGTH];
+    bzero(data, sizeof(data));
+    explode(request, DELIMINATER, data);
 
+    if(data[0] != NULL && data[1] != NULL && data[2] != NULL &&
+            data[3] != NULL && data[4] != NULL )
+    {
+        char file_name[MAX_ENTITY_LENGTH];
+        strcpy(file_name, DATA_ROOT);
+        strcat(file_name, USERS_FILENAME);
+        FILE* file = fopen(file_name, "r");
+        if(file)
+        {
+            // Get existing users
+            char line[MAX_ENTITY_LENGTH];
+            bzero(line, sizeof(line));
+            fgets(line,MAX_ENTITY_LENGTH, file);
+            while(!feof(file))
+            {
+                if(strlen(line) > VALID_MINIMUM_DATA)
+                {
+                    char user[MAX_USER_DETAILS][MAX_ENTITY_LENGTH];
+                    bzero(user, sizeof(user));
+                    explode(line, " ", user);
+                    if(strcmp(data[1], user[0]) == 0)
+                    {
+                        // Exists a user with the same email
+                        strcpy(response, ADD_USER);
+                        strcat(response, DELIMINATER);
+                        strcat(response, FAILURE);
+                        return;
+                    }
+                }
+                fgets(line, MAX_ENTITY_LENGTH, file);
+            }
+            fclose(file);
+        }
+
+        // Add the new user to the users file
+        char record[MAX_ENTITY_LENGTH];
+        bzero(record, sizeof(record));
+        strcpy(record, data[1]);
+        strcat(record, " ");
+        strcat(record, data[2]);
+        strcat(record, " ");
+        strcat(record, data[3]);
+        strcat(record, " ");
+        strcat(record, data[4]);
+        strcat(record, "\n");
+
+        file = fopen(file_name, "a");
+        fputs(record, file);
+        fclose(file);
+
+        // Create tweets and followed-users files for the new user
+        strcpy(file_name, DATA_ROOT);
+        strcat(file_name, data[1]);
+        strcat(file_name, FOLLOW_EXT);
+        file = fopen(file_name, "w");
+        fclose(file);
+        chmod(file_name, FILE_MODE);
+
+        strcpy(file_name, DATA_ROOT);
+        strcat(file_name, data[1]);
+        strcat(file_name, TWEETS_EXT);
+        file = fopen(file_name, "w");
+        fclose(file);
+        chmod(file_name, FILE_MODE);
+
+        strcpy(response, ADD_USER);
+        strcat(response, DELIMINATER);
+        strcat(response, SUCCESS);
+        return;
+    }
+
+    strcpy(response, ADD_USER);
+    strcat(response, DELIMINATER);
+    strcat(response, FAILURE);
 }
 
 // Remove user and his/her data from the records
 void  remove_user(char* request, char* response)
 {
+    char data[MAX_REQUEST_ENTITIES][MAX_ENTITY_LENGTH];
+    char new_data[MAX_REQUEST_ENTITIES][MAX_ENTITY_LENGTH];
+    bzero(data, sizeof(data));
+    bzero(new_data, sizeof(new_data));
+    explode(request, DELIMINATER, data);
+    int pos = 0;
+    if( data[0] != NULL && data[1] != NULL)
+    {
+        char file_name[MAX_ENTITY_LENGTH];
+        strcpy(file_name, DATA_ROOT);
+        strcat(file_name, USERS_FILENAME);
+        FILE* file = fopen(file_name, "r");
 
+        if(file)
+        {
+            // Get existing users
+            char line[MAX_ENTITY_LENGTH];
+            bzero(line, sizeof(line));
+            fgets(line,MAX_ENTITY_LENGTH, file);
+            while(!feof(file))
+            {
+                if(strlen(line) > VALID_MINIMUM_DATA)
+                {
+                    char user[MAX_USER_DETAILS][MAX_ENTITY_LENGTH];
+                    bzero(user, sizeof(user));
+                    explode(line, " ", user);
+                    if(strcmp(data[1], user[0]) == 0)
+                    {
+                        // Remove tweets and followed people files
+                        char file_name[MAX_ENTITY_LENGTH];
+                        strcpy(file_name, DATA_ROOT);
+                        strcat(file_name, data[1]);
+                        strcat(file_name, FOLLOW_EXT);
+                        remove(file_name);
+
+                        strcpy(file_name, DATA_ROOT);
+                        strcat(file_name, data[1]);
+                        strcat(file_name, TWEETS_EXT);
+                        remove(file_name);
+                    }
+                    else
+                    {
+                        // Keep all details for the user
+                        strcpy(new_data[pos++], line);
+                    }
+                }
+                fgets(line, MAX_ENTITY_LENGTH, file);
+            }
+            fclose(file);
+        }
+
+        file = fopen(file_name, "w");
+        int K = 0;
+        while(K < pos)  fputs(new_data[K++], file);
+        fclose(file);
+    }
+    strcpy(response, REMOVE_USER);
+    strcat(response, DELIMINATER);
+    strcat(response, SUCCESS);
 }
 
 // Follow the given user
@@ -234,7 +371,7 @@ void  unfollow_users(char* request, char* response)
     bzero(data, sizeof(data));
     bzero(new_data, sizeof(new_data));
     explode(request, DELIMINATER, data);
-    int pos = 0, following = 0;
+    int pos = 0;
     if( data[0] != NULL && data[1] != NULL)
     {
         char file_name[MAX_ENTITY_LENGTH];
@@ -252,12 +389,12 @@ void  unfollow_users(char* request, char* response)
             while(!feof(file))
             {
                 trim(line);
-                if(strlen(line) > 5)
+                if(strlen(line) > VALID_MINIMUM_DATA)
                 {
                     int K = 2;
                     while(TRUE)
                     {
-                        if(strlen(data[K]) < 5) break;
+                        if(strlen(data[K]) < VALID_MINIMUM_DATA) break;
                         if(strcmp(line, data[K++]) != 0)
                         {
                             strcpy(new_data[pos++], line);
@@ -284,7 +421,7 @@ void  unfollow_users(char* request, char* response)
     strcat(response, SUCCESS);
 }
 
-// Pull all tweets for the user
+// Pull user detail (email)
 void  get_user(char* request, char* response)
 {
     char data[MAX_REQUEST_ENTITIES][MAX_ENTITY_LENGTH];
@@ -300,7 +437,7 @@ void  get_user(char* request, char* response)
         if(file)
         {
             char line[MAX_ENTITY_LENGTH];
-            char user[USER_DETAILS][MAX_ENTITY_LENGTH];
+            char user[MAX_USER_DETAILS][MAX_ENTITY_LENGTH];
             fgets(line,MAX_ENTITY_LENGTH, file);
 
             while(!feof(file))
@@ -364,6 +501,7 @@ void get_followed_users(char* request, char* response)
             strcpy(response, GET_FOLLOWED_USERS);
             while(!feof(file))
             {
+                trim(line);
                 strcat(response, DELIMINATER);
                 strcat(response, line);
                 fgets(line,MAX_ENTITY_LENGTH, file);

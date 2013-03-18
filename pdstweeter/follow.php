@@ -1,20 +1,5 @@
 <?php
-// Server details
-define("SERVER_PORT", 8888);
-define("SERVER_ADDR", 'tcp://localhost');
-define("BUFFER_SIZE", 8192);
-
-// Protocol keywords
-define("FOLLOW_USER", 'FOLUSR');
-define("GET_USER", 'GETUSR');
-define("DELIMINATER", '~');
-define("FAILURE", 'NO');
-
-// Keys for identifying data
-define("KEY_QUERY", 'query');
-define("KEY_FOLLOW_USER", 'followuser');
-define("KEY_USER_TO_FOLLOW", 'usertofollow');
-define("KEY_EMAIL", 'email');
+include_once('protocol.php');
 
 session_start();
 
