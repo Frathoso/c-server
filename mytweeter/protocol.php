@@ -31,4 +31,6 @@ define("KEY_QUERY", 'query');
 define("KEY_FOLLOW_USER", 'followuser');
 define("KEY_USER_TO_FOLLOW", 'usertofollow');
 define("KEY_UNFOLLOW", 'unfollow');
+define("KEY_TWEET", 'tweet');
+define("KEY_MESSAGE", 'message');
 ?>

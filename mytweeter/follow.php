@@ -45,7 +45,10 @@ if (isset($_POST[KEY_FOLLOW_USER]) && isset($_SESSION[KEY_EMAIL]) && isset($_SES
 			fputs($fp, $request, strlen($request));
 
 			// Analyse server's response
-			$results = trim(fgets($fp));
+			$response = trim(fgets($fp));
+			if(strcmp($response, FOLLOW_USER.DELIMINATER.SUCCESS) == 0){
+				$_SESSION[KEY_MESSAGE] = $_SESSION[KEY_USER_TO_FOLLOW];
+			}
 			fclose($fp);
 		} else {
 			echo "Error Connecting: " . $errNo . ": " . $errStr;
@@ -54,6 +57,7 @@ if (isset($_POST[KEY_FOLLOW_USER]) && isset($_SESSION[KEY_EMAIL]) && isset($_SES
 		echo "<br> Error: " . $ex;
 	}
 
+	// Remove the user-to-be-followed tag
 	unset($_SESSION[KEY_USER_TO_FOLLOW]);
 }
 ?>
@@ -84,10 +88,12 @@ if (isset($_POST[KEY_FOLLOW_USER]) && isset($_SESSION[KEY_EMAIL]) && isset($_SES
 							echo $form;
 						} else if (isset($_POST[KEY_QUERY])) {
 							echo "User not available";
+						}else if(isset($_SESSION[KEY_MESSAGE])){
+							echo "You're now following <b>".$_SESSION[KEY_MESSAGE]."<b>";
+							unset($_SESSION[KEY_MESSAGE]);
 						}
 						?>
 					</div>
-
 				</div>
 			</div>
 		</div>

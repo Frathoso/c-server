@@ -1,8 +1,7 @@
-/*
- *  Author: Francis Sowani
+/*  Author: Francis Sowani
+ *  Instr : Prof. John Sterling
+ *  Course: Parallel and Distributed Systems
  *  Date  : 15 March 2013
- *
- *
  */
 
 #include<stdio.h>
@@ -26,7 +25,7 @@
 #define TOTAL_CLIENTS   50
 #define PORT            8888
 #define BUFFER_SIZE     8192
-#define DATA_ROOT       "../tweeter-data/"
+#define DATA_ROOT       "data/"
 #define USERS_FILENAME  "users"
 #define FOLLOW_EXT      ".follow"
 #define TWEETS_EXT      ".tweets"
@@ -100,7 +99,7 @@ int main(int argc, char* argv[])
         if(read(cli_fd, request, BUFFER_SIZE))
         {
             // Analyse and respond to the request
-            printf("REQUEST [%d](%s) ---> ", strlen(request), request);
+            //printf("REQUEST [%d](%s) ---> ", strlen(request), request);
             char header[HEADER_SIZE+1];
             bzero(header, sizeof(header));
             strncpy(header, request, HEADER_SIZE);
@@ -128,7 +127,7 @@ int main(int argc, char* argv[])
             else
                 unknown_request(response);
 
-            printf("RESPONSE [%d](%s)\n\n", strlen(response), response);
+            //printf("RESPONSE [%d](%s)\n\n", strlen(response), response);
 
             if(write(cli_fd, response, strlen(response)) < 0 ) log_error("Replying to client");
         }
@@ -471,13 +470,64 @@ void  get_user(char* request, char* response)
 // Pull all tweets for the user
 void  get_user_tweets(char* request, char* response)
 {
+    char data[MAX_REQUEST_ENTITIES][MAX_ENTITY_LENGTH];
+    bzero(data, sizeof(data));
+    explode(request, DELIMINATER, data);
+    if( data[0] != NULL && data[1] != NULL)
+    {
+        char file_name[MAX_ENTITY_LENGTH];
+        strcpy(file_name, DATA_ROOT);
+        strcat(file_name, data[1]);
+        strcat(file_name, TWEETS_EXT);
+        FILE* file = fopen(file_name, "r");
 
+        if(file)
+        {
+            char line[MAX_ENTITY_LENGTH];
+            fgets(line,MAX_ENTITY_LENGTH, file);
+            strcpy(response, GET_USER_TWEETS);
+            int count = 0;
+            while(!feof(file) && count < MAX_TWEETS)
+            {
+                trim(line);
+                strcat(response, DELIMINATER);
+                strcat(response, line);
+                fgets(line,MAX_ENTITY_LENGTH, file);
+                count++;
+            }
+            fclose(file);
+        }
+    }
 }
 
 // Add new tweet for the user
 void  put_user_tweet(char* request, char* response)
 {
+    char data[MAX_REQUEST_ENTITIES][MAX_ENTITY_LENGTH];
+    bzero(data, sizeof(data));
+    explode(request, DELIMINATER, data);
+    if( data[0] != NULL && data[1] != NULL && data[2] != NULL)
+    {
+        char file_name[MAX_ENTITY_LENGTH];
+        strcpy(file_name, DATA_ROOT);
+        strcat(file_name, data[1]);
+        strcat(file_name, TWEETS_EXT);
+        FILE* file = fopen(file_name, "a");
 
+        if(file)
+        {
+            fputs(data[2], file);
+            fputs("\n", file);
+            fclose(file);
+            strcpy(response, PUT_USER_TWEET);
+            strcat(response, DELIMINATER);
+            strcat(response, SUCCESS);
+            return;
+        }
+    }
+    strcpy(response, PUT_USER_TWEET);
+    strcat(response, DELIMINATER);
+    strcat(response, FAILURE);
 }
 
 // Retrieve all users followed by the user
@@ -507,8 +557,12 @@ void get_followed_users(char* request, char* response)
                 fgets(line,MAX_ENTITY_LENGTH, file);
             }
             fclose(file);
+            return;
         }
     }
+    strcpy(response, GET_FOLLOWED_USERS);
+    strcat(response, DELIMINATER);
+    strcat(response, FAILURE);
 }
 
 // Respond to the unknown request

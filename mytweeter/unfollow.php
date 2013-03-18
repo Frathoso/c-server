@@ -1,5 +1,5 @@
 <?php
-include_once('protocol.php');
+include_once ('protocol.php');
 
 session_start();
 
@@ -11,7 +11,7 @@ if (isset($_POST[KEY_UNFOLLOW]) && isset($_SESSION[KEY_EMAIL])) {
 		$fp = stream_socket_client(SERVER_ADDR . ":" . SERVER_PORT, $errNo, $errStr);
 		if ($fp) {
 			// Send request to retrieve user details (email)
-			$request = UNFOLLOW_USER.DELIMINATER.$_SESSION[KEY_EMAIL];
+			$request = UNFOLLOW_USERS . DELIMINATER . $_SESSION[KEY_EMAIL];
 			foreach ($_POST[KEY_UNFOLLOW] as $key => $selectedName) {
 				$request .= DELIMINATER . trim($selectedName);
 			}
@@ -80,12 +80,11 @@ if (isset($_POST[KEY_UNFOLLOW]) && isset($_SESSION[KEY_EMAIL])) {
 								echo "<br> Error: " . $ex;
 							}
 						?>
-<input type="submit" value="Unfollow Selected People" class="button" style="width:200px">
-</form>
-</div>
-
-</div>
-</div>
-</div>
-</body>
+							<input type="submit" value="Unfollow Selected People" class="button" style="width:200px">
+						</form>
+					</div>
+				</div>
+			</div>
+		</div>
+	</body>
 </html>

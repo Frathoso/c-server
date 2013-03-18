@@ -6,6 +6,7 @@ if (!session_id()) session_start();
 
 $firstName = $lastName = $signEmail = "";
 
+// Add User
 if (isset($_POST[KEY_FIRST_NAME]) && isset($_POST[KEY_LAST_NAME]) && isset($_POST[KEY_EMAIL]) && isset($_POST[KEY_PASSWORD])) {
 	try {
 
