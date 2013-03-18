@@ -23,7 +23,7 @@
 
 // Server details
 #define TOTAL_CLIENTS   50
-#define PORT            8888
+#define DEFAULT_PORT    8888
 #define BUFFER_SIZE     8192
 #define DATA_ROOT       "data/"
 #define USERS_FILENAME  "users"
@@ -65,6 +65,18 @@ void trim(char*);
 // Main function
 int main(int argc, char* argv[])
 {
+    // Setting up server's port number
+    int PORT;
+    if( argc == 2 )
+        PORT = atoi(argv[1]);
+    else if( argc > 2 )
+    {
+        log_error("Wrong number of arguments!\nUsage: ./server [port no]\n");
+        exit(1);
+    }
+    else
+        PORT = DEFAULT_PORT;
+
     // Create errors log file
     freopen("error_log.txt", "a", stderr);
 
