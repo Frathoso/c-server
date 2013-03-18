@@ -2,17 +2,17 @@ NB: Only #1 "FOLDERS SETUP" is essential for setting up the system.
 
 1. SETUP:
 	(a) Directories for the SITE:
-		> "mytweeter/"	 --> is the public root folder for the site
+		> "fsowan01/"	 --> is the public root folder for the site
 	
 	(b) Directories for the SERVER:
 		> "server/"		 --> contains the C files for the server
 		> "server/data/" --> contains data for the site
 		
 	(c) If the server is started with a custom port (8888), the port should also be 
-		changed in the "mytweeter/protocol.php" file.
+		changed in the "fsowan01/protocol.php" file.
 	
 	(d) By default the server location is "localhost", if changed the "SERVER_ADDR" 
-		in "mytweeter/protocol.php" should also be modified.
+		in "fsowan01/protocol.php" should also be modified.
 	
 	
 		
