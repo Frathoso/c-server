@@ -1,4 +1,4 @@
-NB: Only #1 "FOLDERS SETUP" is essential for setting up the system.
+NB: Only #1 "SETUP" is essential for setting up the and running system.
 
 1. SETUP:
 	(a) Directories for the SITE:

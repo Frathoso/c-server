@@ -21,7 +21,7 @@
 #define MAX_USER_DETAILS     4
 #define VALID_MINIMUM_DATA   5
 
-// Server details
+/*  Server details      */
 #define TOTAL_CLIENTS   50
 #define DEFAULT_PORT    8888
 #define BUFFER_SIZE     8192
@@ -31,7 +31,7 @@
 #define TWEETS_EXT      ".tweets"
 #define FILE_MODE       0777
 
-// Protocol constants
+/*  Protocol constants   */
 #define AUTHENTICATE_USER   "AUTUSR"
 #define ADD_USER            "ADDUSR"
 #define REMOVE_USER         "REMUSR"
@@ -46,8 +46,9 @@
 #define FAILURE             "NO"
 #define DELIMINATER         "~"
 
-// Functions prototypes
-void log_error(char*);
+/*  Functions prototypes  */
+int  initialize_server(int);
+void run_server(int);
 void authenticate_user(char*, char*);
 void add_user(char*, char*);
 void remove_user(char*, char*);
@@ -61,25 +62,38 @@ void unknown_request(char*);
 void explode(char*, char*, char[][MAX_ENTITY_LENGTH]);
 void lower_case(char[]);
 void trim(char*);
+void log_error(char*);
 
-// Main function
+
 int main(int argc, char* argv[])
 {
-    // Setting up server's port number
-    int PORT;
-    if( argc == 2 )
-        PORT = atoi(argv[1]);
-    else if( argc > 2 )
+    // Set up server's port number
+    int port;
+    if(argc == 2)
+        port = atoi(argv[1]);
+    else if(argc > 2)
     {
         log_error("Wrong number of arguments!\nUsage: ./server [port no]\n");
         exit(1);
     }
     else
-        PORT = DEFAULT_PORT;
+        port = DEFAULT_PORT;
 
-    // Create errors log file
+    // Prepare errors log file
     freopen("error_log.txt", "a", stderr);
 
+    // Configure and start server
+    int fd = initialize_server(port);
+    if(fd < 0) return 1;
+    run_server(fd);
+
+    return 0;
+}
+
+
+/*  Create server objects and bind them together  */
+int initialize_server(int port)
+{
     // Create a server socket
     int server_fd = socket(AF_INET, SOCK_STREAM, 0);
     if(server_fd < 0) log_error("Creating server socket");
@@ -89,12 +103,19 @@ int main(int argc, char* argv[])
     bzero((char*) &server_addr, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = INADDR_ANY;
-    server_addr.sin_port = htons(PORT);
+    server_addr.sin_port = htons(port);
 
     if(bind(server_fd, (struct sockaddr*) &server_addr, sizeof(server_addr)) < 0)
+    {
         log_error("Binding server address");
+        return -1;
+    }
+    return server_fd;
+}
 
-    // Start listening for clients
+/*  Start listening and serving clients  */
+void run_server(int server_fd)
+{
     while(TRUE)
     {
         listen(server_fd, TOTAL_CLIENTS);
@@ -120,53 +141,44 @@ int main(int argc, char* argv[])
 
             if(strcmp(header, AUTHENTICATE_USER) == 0)
                 authenticate_user(request, response);
-            else if( strcmp(header, ADD_USER) == 0)
+            else if(strcmp(header, ADD_USER) == 0)
                 add_user(request, response);
-            else if( strcmp(header, REMOVE_USER) == 0)
+            else if(strcmp(header, REMOVE_USER) == 0)
                 remove_user(request, response);
-            else if( strcmp(header, FOLLOW_USER) == 0)
+            else if(strcmp(header, FOLLOW_USER) == 0)
                 follow_user(request, response);
-            else if( strcmp(header, UNFOLLOW_USERS) == 0)
+            else if(strcmp(header, UNFOLLOW_USERS) == 0)
                 unfollow_users(request, response);
-            else if( strcmp(header, GET_USER) == 0)
+            else if(strcmp(header, GET_USER) == 0)
                 get_user(request, response);
-            else if( strcmp(header, GET_USER_TWEETS) == 0)
+            else if(strcmp(header, GET_USER_TWEETS) == 0)
                 get_user_tweets(request, response);
-            else if( strcmp(header, PUT_USER_TWEET) == 0)
+            else if(strcmp(header, PUT_USER_TWEET) == 0)
                 put_user_tweet(request, response);
-            else if( strcmp(header, GET_FOLLOWED_USERS) == 0)
+            else if(strcmp(header, GET_FOLLOWED_USERS) == 0)
                 get_followed_users(request, response);
             else
                 unknown_request(response);
 
             //printf("RESPONSE [%d](%s)\n\n", strlen(response), response);
-
             if(write(cli_fd, response, strlen(response)) < 0 ) log_error("Replying to client");
         }
         else log_error("Talking to client");
-
         close(cli_fd);
     }
-    return 0;
 }
 
-// Dump error message into the standard error location
-void log_error(char* msg)
-{
-    perror(msg);
-}
 
-// Check if user and password are valid
+/*  Validate user and password pair   */
 void  authenticate_user(char* request, char* response)
 {
     char data[MAX_REQUEST_ENTITIES][MAX_ENTITY_LENGTH];
     bzero(data, sizeof(data));
     explode(request, DELIMINATER, data);
-    if( data[0] != NULL && data[1] != NULL)
+    if(data[0] != NULL && data[1] != NULL)
     {
         char file_name[MAX_ENTITY_LENGTH];
-        strcpy(file_name, DATA_ROOT);
-        strcat(file_name, USERS_FILENAME);
+        sprintf(file_name, "%s%s", DATA_ROOT, USERS_FILENAME);
         FILE* file = fopen(file_name, "r");
 
         if(file)
@@ -175,6 +187,7 @@ void  authenticate_user(char* request, char* response)
             char user[MAX_USER_DETAILS][MAX_ENTITY_LENGTH];
             fgets(line,MAX_ENTITY_LENGTH, file);
 
+            // Check all records of the users' file for the match
             while(!feof(file))
             {
                 bzero(user, sizeof(user));
@@ -184,9 +197,7 @@ void  authenticate_user(char* request, char* response)
                     if(strcmp(user[0], data[1]) == 0 &&
                             strcmp(user[1], data[2]) == 0)
                     {
-                        strcpy(response, AUTHENTICATE_USER);
-                        strcat(response, DELIMINATER);
-                        strcat(response, SUCCESS);
+                        sprintf(response, "%s%s%s", AUTHENTICATE_USER, DELIMINATER, SUCCESS);
                         fclose(file);
                         return;
                     }
@@ -196,12 +207,10 @@ void  authenticate_user(char* request, char* response)
             fclose(file);
         }
     }
-    strcpy(response, AUTHENTICATE_USER);
-    strcat(response, DELIMINATER);
-    strcat(response, FAILURE);
+    sprintf(response, "%s%s%s", AUTHENTICATE_USER, DELIMINATER, FAILURE);
 }
 
-// Add new user if not existing
+/*  Add new user if not existing    */
 void  add_user(char* request, char* response)
 {
     char data[MAX_REQUEST_ENTITIES][MAX_ENTITY_LENGTH];
@@ -212,8 +221,7 @@ void  add_user(char* request, char* response)
             data[3] != NULL && data[4] != NULL )
     {
         char file_name[MAX_ENTITY_LENGTH];
-        strcpy(file_name, DATA_ROOT);
-        strcat(file_name, USERS_FILENAME);
+        sprintf(file_name, "%s%s", DATA_ROOT, USERS_FILENAME);
         FILE* file = fopen(file_name, "r");
         if(file)
         {
@@ -231,9 +239,7 @@ void  add_user(char* request, char* response)
                     if(strcmp(data[1], user[0]) == 0)
                     {
                         // Exists a user with the same email
-                        strcpy(response, ADD_USER);
-                        strcat(response, DELIMINATER);
-                        strcat(response, FAILURE);
+                        sprintf(response, "%s%s%s", ADD_USER, DELIMINATER, FAILURE);
                         return;
                     }
                 }
@@ -244,47 +250,29 @@ void  add_user(char* request, char* response)
 
         // Add the new user to the users file
         char record[MAX_ENTITY_LENGTH];
-        bzero(record, sizeof(record));
-        strcpy(record, data[1]);
-        strcat(record, " ");
-        strcat(record, data[2]);
-        strcat(record, " ");
-        strcat(record, data[3]);
-        strcat(record, " ");
-        strcat(record, data[4]);
-        strcat(record, "\n");
-
+        sprintf(record, "%s %s %s %s\n", data[1], data[2], data[3], data[4]);
         file = fopen(file_name, "a");
         fputs(record, file);
         fclose(file);
 
         // Create tweets and followed-users files for the new user
-        strcpy(file_name, DATA_ROOT);
-        strcat(file_name, data[1]);
-        strcat(file_name, FOLLOW_EXT);
+        sprintf(file_name, "%s%s%s", DATA_ROOT, data[1], FOLLOW_EXT);
         file = fopen(file_name, "w");
         fclose(file);
         chmod(file_name, FILE_MODE);
 
-        strcpy(file_name, DATA_ROOT);
-        strcat(file_name, data[1]);
-        strcat(file_name, TWEETS_EXT);
+        sprintf(file_name, "%s%s%s", DATA_ROOT, data[1], TWEETS_EXT);
         file = fopen(file_name, "w");
         fclose(file);
         chmod(file_name, FILE_MODE);
 
-        strcpy(response, ADD_USER);
-        strcat(response, DELIMINATER);
-        strcat(response, SUCCESS);
+        sprintf(file_name, "%s%s%s", ADD_USER, DELIMINATER, SUCCESS);
         return;
     }
-
-    strcpy(response, ADD_USER);
-    strcat(response, DELIMINATER);
-    strcat(response, FAILURE);
+    sprintf(response, "%s%s%s", ADD_USER, DELIMINATER, FAILURE);
 }
 
-// Remove user and his/her data from the records
+/*  Remove user and his/her data from the records   */
 void  remove_user(char* request, char* response)
 {
     char data[MAX_REQUEST_ENTITIES][MAX_ENTITY_LENGTH];
@@ -293,11 +281,10 @@ void  remove_user(char* request, char* response)
     bzero(new_data, sizeof(new_data));
     explode(request, DELIMINATER, data);
     int pos = 0;
-    if( data[0] != NULL && data[1] != NULL)
+    if(data[0] != NULL && data[1] != NULL)
     {
         char file_name[MAX_ENTITY_LENGTH];
-        strcpy(file_name, DATA_ROOT);
-        strcat(file_name, USERS_FILENAME);
+        sprintf(file_name, "%s%s", DATA_ROOT, USERS_FILENAME);
         FILE* file = fopen(file_name, "r");
 
         if(file)
@@ -305,7 +292,7 @@ void  remove_user(char* request, char* response)
             // Get existing users
             char line[MAX_ENTITY_LENGTH];
             bzero(line, sizeof(line));
-            fgets(line,MAX_ENTITY_LENGTH, file);
+            fgets(line, MAX_ENTITY_LENGTH, file);
             while(!feof(file))
             {
                 if(strlen(line) > VALID_MINIMUM_DATA)
@@ -317,14 +304,10 @@ void  remove_user(char* request, char* response)
                     {
                         // Remove tweets and followed people files
                         char file_name[MAX_ENTITY_LENGTH];
-                        strcpy(file_name, DATA_ROOT);
-                        strcat(file_name, data[1]);
-                        strcat(file_name, FOLLOW_EXT);
+                        sprintf(file_name, "%s%s%s", DATA_ROOT, data[1], FOLLOW_EXT);
                         remove(file_name);
 
-                        strcpy(file_name, DATA_ROOT);
-                        strcat(file_name, data[1]);
-                        strcat(file_name, TWEETS_EXT);
+                        sprintf(file_name, "%s%s%s", DATA_ROOT, data[1], TWEETS_EXT);
                         remove(file_name);
                     }
                     else
@@ -343,23 +326,19 @@ void  remove_user(char* request, char* response)
         while(K < pos)  fputs(new_data[K++], file);
         fclose(file);
     }
-    strcpy(response, REMOVE_USER);
-    strcat(response, DELIMINATER);
-    strcat(response, SUCCESS);
+    sprintf(response, "%s%s%s", REMOVE_USER, DELIMINATER, SUCCESS);
 }
 
-// Follow the given user
+/*  Follow the given user   */
 void  follow_user(char* request, char* response)
 {
     char data[MAX_REQUEST_ENTITIES][MAX_ENTITY_LENGTH];
     bzero(data, sizeof(data));
     explode(request, DELIMINATER, data);
-    if( data[1] != NULL && data[2] != NULL)
+    if(data[1] != NULL && data[2] != NULL)
     {
         char file_name[MAX_ENTITY_LENGTH];
-        strcpy(file_name, DATA_ROOT);
-        strcat(file_name, data[1]);
-        strcat(file_name, FOLLOW_EXT);
+        sprintf(file_name, "%s%s%s", DATA_ROOT, data[1], FOLLOW_EXT);
         FILE* file = fopen(file_name, "a");
 
         if(file)
@@ -369,12 +348,10 @@ void  follow_user(char* request, char* response)
             fclose(file);
         }
     }
-    strcpy(response, FOLLOW_USER);
-    strcat(response, DELIMINATER);
-    strcat(response, SUCCESS);
+    sprintf(response, "%s%s%s", FOLLOW_USER, DELIMINATER, SUCCESS);
 }
 
-// Remove user from the followed list
+/*  Remove user from the followed list  */
 void  unfollow_users(char* request, char* response)
 {
     char data[MAX_REQUEST_ENTITIES][MAX_ENTITY_LENGTH];
@@ -383,12 +360,10 @@ void  unfollow_users(char* request, char* response)
     bzero(new_data, sizeof(new_data));
     explode(request, DELIMINATER, data);
     int pos = 0;
-    if( data[0] != NULL && data[1] != NULL)
+    if(data[0] != NULL && data[1] != NULL)
     {
         char file_name[MAX_ENTITY_LENGTH];
-        strcpy(file_name, DATA_ROOT);
-        strcat(file_name, data[1]);
-        strcat(file_name, FOLLOW_EXT);
+        sprintf(file_name, "%s%s%s", DATA_ROOT, data[1], FOLLOW_EXT);
         FILE* file = fopen(file_name, "r");
 
         if(file)
@@ -418,8 +393,9 @@ void  unfollow_users(char* request, char* response)
             fclose(file);
         }
 
+        // Write back the modified contents
         file = fopen(file_name, "w");
-        int K=0;
+        int K = 0;
         while(K < pos)
         {
             fputs(new_data[K++], file);
@@ -427,12 +403,10 @@ void  unfollow_users(char* request, char* response)
         }
         fclose(file);
     }
-    strcpy(response, UNFOLLOW_USERS);
-    strcat(response, DELIMINATER);
-    strcat(response, SUCCESS);
+    sprintf(response, "%s%s%s", UNFOLLOW_USERS, DELIMINATER, SUCCESS);
 }
 
-// Pull user detail (email)
+/*  Pull user detail (email)    */
 void  get_user(char* request, char* response)
 {
     char data[MAX_REQUEST_ENTITIES][MAX_ENTITY_LENGTH];
@@ -441,8 +415,7 @@ void  get_user(char* request, char* response)
     if( data[0] != NULL && data[1] != NULL)
     {
         char file_name[MAX_ENTITY_LENGTH];
-        strcpy(file_name, DATA_ROOT);
-        strcat(file_name, USERS_FILENAME);
+        sprintf(file_name, "%s%s", DATA_ROOT, USERS_FILENAME);
         FILE* file = fopen(file_name, "r");
 
         if(file)
@@ -462,9 +435,7 @@ void  get_user(char* request, char* response)
                             strcmp(user[2], data[1]) == 0 ||
                             strcmp(user[3], data[1]) == 0 )
                     {
-                        strcpy(response, GET_USER);
-                        strcat(response, DELIMINATER);
-                        strcat(response, user[0]);
+                        sprintf(response, "%s%s%s", GET_USER, DELIMINATER, user[0]);
                         fclose(file);
                         return;
                     }
@@ -474,23 +445,19 @@ void  get_user(char* request, char* response)
             fclose(file);
         }
     }
-    strcpy(response, GET_USER);
-    strcat(response, DELIMINATER);
-    strcat(response, FAILURE);
+    sprintf(response, "%s%s%s", GET_USER, DELIMINATER, FAILURE);
 }
 
-// Pull all tweets for the user
+/*  Pull all tweets for the user    */
 void  get_user_tweets(char* request, char* response)
 {
     char data[MAX_REQUEST_ENTITIES][MAX_ENTITY_LENGTH];
     bzero(data, sizeof(data));
     explode(request, DELIMINATER, data);
-    if( data[0] != NULL && data[1] != NULL)
+    if(data[0] != NULL && data[1] != NULL)
     {
         char file_name[MAX_ENTITY_LENGTH];
-        strcpy(file_name, DATA_ROOT);
-        strcat(file_name, data[1]);
-        strcat(file_name, TWEETS_EXT);
+        sprintf(file_name, "%s%s%s", DATA_ROOT, data[1], TWEETS_EXT);
         FILE* file = fopen(file_name, "r");
 
         if(file)
@@ -512,7 +479,7 @@ void  get_user_tweets(char* request, char* response)
     }
 }
 
-// Add new tweet for the user
+/*  Add new tweet for the user  */
 void  put_user_tweet(char* request, char* response)
 {
     char data[MAX_REQUEST_ENTITIES][MAX_ENTITY_LENGTH];
@@ -521,9 +488,7 @@ void  put_user_tweet(char* request, char* response)
     if( data[0] != NULL && data[1] != NULL && data[2] != NULL)
     {
         char file_name[MAX_ENTITY_LENGTH];
-        strcpy(file_name, DATA_ROOT);
-        strcat(file_name, data[1]);
-        strcat(file_name, TWEETS_EXT);
+        sprintf(file_name, "%s%s%s", DATA_ROOT, data[1], TWEETS_EXT);
         FILE* file = fopen(file_name, "a");
 
         if(file)
@@ -531,18 +496,14 @@ void  put_user_tweet(char* request, char* response)
             fputs(data[2], file);
             fputs("\n", file);
             fclose(file);
-            strcpy(response, PUT_USER_TWEET);
-            strcat(response, DELIMINATER);
-            strcat(response, SUCCESS);
+            sprintf(response, "%s%s%s", PUT_USER_TWEET, DELIMINATER, SUCCESS);
             return;
         }
     }
-    strcpy(response, PUT_USER_TWEET);
-    strcat(response, DELIMINATER);
-    strcat(response, FAILURE);
+    sprintf(response, "%s%s%s", PUT_USER_TWEET, DELIMINATER, FAILURE);
 }
 
-// Retrieve all users followed by the user
+/*  Retrieve all users followed by the user     */
 void get_followed_users(char* request, char* response)
 {
     char data[MAX_REQUEST_ENTITIES][MAX_ENTITY_LENGTH];
@@ -551,9 +512,7 @@ void get_followed_users(char* request, char* response)
     if( data[0] != NULL && data[1] != NULL)
     {
         char file_name[MAX_ENTITY_LENGTH];
-        strcpy(file_name, DATA_ROOT);
-        strcat(file_name, data[1]);
-        strcat(file_name, FOLLOW_EXT);
+        sprintf(file_name, "%s%s%s", DATA_ROOT, data[1], FOLLOW_EXT);
         FILE* file = fopen(file_name, "r");
 
         if(file)
@@ -572,18 +531,16 @@ void get_followed_users(char* request, char* response)
             return;
         }
     }
-    strcpy(response, GET_FOLLOWED_USERS);
-    strcat(response, DELIMINATER);
-    strcat(response, FAILURE);
+    sprintf(response, "%s%s%s", GET_FOLLOWED_USERS, DELIMINATER, FAILURE);
 }
 
-// Respond to the unknown request
+/*  Respond to the unknown request      */
 void unknown_request(char* response)
 {
     strcpy(response, UNKNOWN_REQUEST);
 }
 
-// Separate the request into individual entities
+/*  Separate the request into individual entities   */
 void explode(char* request, char* del, char data [MAX_REQUEST_ENTITIES][MAX_ENTITY_LENGTH])
 {
     char* req = strtok(request, del);
@@ -595,16 +552,22 @@ void explode(char* request, char* del, char data [MAX_REQUEST_ENTITIES][MAX_ENTI
     }
 }
 
-// Convert all characters to lower case
+/*  Convert all characters to lower case    */
 void lower_case(char line[MAX_ENTITY_LENGTH])
 {
     int K = 0;
     while(K++ < MAX_ENTITY_LENGTH) line[K] = tolower(line[K]);
 }
 
-// Remove whitespace from string
+/*  Remove whitespace from string   */
 void trim(char* str)
 {
     int K = strlen(str) - 1;
     while(isspace(str[K])) str[K--] = '\0';
+}
+
+/*  Dump error message into the standard error location     */
+void log_error(char* msg)
+{
+    perror(msg);
 }
