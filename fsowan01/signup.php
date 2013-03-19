@@ -14,15 +14,15 @@ if (isset($_POST[KEY_FIRST_NAME]) && isset($_POST[KEY_LAST_NAME]) && isset($_POS
 		$fp = stream_socket_client(SERVER_ADDR . ":" . SERVER_PORT, $errNo, $errStr, 0);
 		if ($fp) {
 			// Send request to add a user
-			$request = ADD_USER . DELIMINATER . $_POST[KEY_EMAIL] . DELIMINATER . $_POST[KEY_PASSWORD] . DELIMINATER;
-			$request .= $_POST[KEY_FIRST_NAME] . DELIMINATER . $_POST[KEY_LAST_NAME];
+			$request = ADD_USER . DELIMITER . $_POST[KEY_EMAIL] . DELIMITER . $_POST[KEY_PASSWORD] . DELIMITER;
+			$request .= $_POST[KEY_FIRST_NAME] . DELIMITER . $_POST[KEY_LAST_NAME];
 			fputs($fp, $request, strlen($request));
 
 			$response = trim(fgets($fp, BUFFER_SIZE));
 			fclose($fp);
 
 			// Analyse response
-			if (strcmp($response, ADD_USER . DELIMINATER . FAILURE) == 0) {
+			if (strcmp($response, ADD_USER . DELIMITER . FAILURE) == 0) {
 				// User exists
 				echo "Email exists";
 				$firstName = $_POST[KEY_FIRST_NAME];

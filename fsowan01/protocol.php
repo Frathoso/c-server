@@ -20,7 +20,7 @@ define("GET_FOLLOWED_USERS", "GETFOL");
 define("UNKNOWN_REQUEST", "UNKNOW");
 define("SUCCESS", "YES");
 define("FAILURE", "NO");
-define("DELIMINATER", "~");
+define("DELIMITER", "~");
 
 // Keys for identifying data
 define("KEY_EMAIL", 'email');

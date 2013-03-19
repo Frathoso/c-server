@@ -11,9 +11,9 @@ if (isset($_POST[KEY_UNFOLLOW]) && isset($_SESSION[KEY_EMAIL])) {
 		$fp = stream_socket_client(SERVER_ADDR . ":" . SERVER_PORT, $errNo, $errStr);
 		if ($fp) {
 			// Send request to retrieve user details (email)
-			$request = UNFOLLOW_USERS . DELIMINATER . $_SESSION[KEY_EMAIL];
+			$request = UNFOLLOW_USERS . DELIMITER . $_SESSION[KEY_EMAIL];
 			foreach ($_POST[KEY_UNFOLLOW] as $key => $selectedName) {
-				$request .= DELIMINATER . trim($selectedName);
+				$request .= DELIMITER . trim($selectedName);
 			}
 			fputs($fp, $request, strlen($request));
 
@@ -52,17 +52,17 @@ if (isset($_POST[KEY_UNFOLLOW]) && isset($_SESSION[KEY_EMAIL])) {
 								$fp = stream_socket_client(SERVER_ADDR . ":" . SERVER_PORT, $errNo, $errStr);
 								if ($fp) {
 									// Send request to retrieve user details (email)
-									$request = GET_FOLLOWED_USERS . DELIMINATER . $_SESSION[KEY_EMAIL];
+									$request = GET_FOLLOWED_USERS . DELIMITER . $_SESSION[KEY_EMAIL];
 									fputs($fp, $request, strlen($request));
 
 									// Analyse server's response
 									while (!feof($fp)) {
 										$results = trim(fgets($fp));
 										if ($results) {
-											if (strcmp($results, GET_FOLLOWED_USERS . DELIMINATER . FAILURE) == 0) {
+											if (strcmp($results, GET_FOLLOWED_USERS . DELIMITER . FAILURE) == 0) {
 												break;
 											}
-											$users = explode(DELIMINATER, $results);
+											$users = explode(DELIMITER, $results);
 											//for ($K = 0; $K < count($users); $K++) {
 											foreach ($users as $key => $user) {
 												if (strcmp($user, GET_FOLLOWED_USERS) == 0 || strlen($user) < 5) {

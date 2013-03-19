@@ -14,14 +14,14 @@ if(isset($_POST[KEY_EMAIL]) && isset($_POST[KEY_PASSWORD])){
 		
 		if($fp){
 			// Submit email and password for authentication
-			$request = AUTHENTICATE_USER.DELIMINATER.$_POST[KEY_EMAIL].DELIMINATER.$_POST[KEY_PASSWORD];
+			$request = AUTHENTICATE_USER.DELIMITER.$_POST[KEY_EMAIL].DELIMITER.$_POST[KEY_PASSWORD];
 			fputs($fp, $request, strlen($request));
 			
 			// Analyse the returned results
 			$results = trim(fgets($fp, BUFFER_SIZE));
 			fclose($fp);
 			if($results){
-				if (strcmp(trim($results), AUTHENTICATE_USER.DELIMINATER.SUCCESS) == 0) {
+				if (strcmp(trim($results), AUTHENTICATE_USER.DELIMITER.SUCCESS) == 0) {
 					// Start user session and redirects to the user's homepage
 					$_SESSION[KEY_EMAIL] = $_POST[KEY_EMAIL];
 					header('Location: ' . HOME_PAGE);

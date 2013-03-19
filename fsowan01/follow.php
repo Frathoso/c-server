@@ -11,15 +11,15 @@ if (isset($_POST[KEY_QUERY])) {
 		$fp = stream_socket_client(SERVER_ADDR . ":" . SERVER_PORT, $errNo, $errStr);
 		if ($fp) {
 			// Send request to retrieve user details (email)
-			$request = GET_USER . DELIMINATER . strtolower(trim($_POST[KEY_QUERY]));
+			$request = GET_USER . DELIMITER . strtolower(trim($_POST[KEY_QUERY]));
 			fputs($fp, $request, strlen($request));
 
 			// Analyse server's response
 			$results = trim(fgets($fp));
 			fclose($fp);
 			if ($results) {
-				if (strcmp($results, GET_USER . DELIMINATER . FAILURE) != 0) {
-					$reqArray = explode(DELIMINATER, $results);
+				if (strcmp($results, GET_USER . DELIMITER . FAILURE) != 0) {
+					$reqArray = explode(DELIMITER, $results);
 					$_SESSION[KEY_USER_TO_FOLLOW] = $reqArray[1];
 				}
 			}
@@ -41,12 +41,12 @@ if (isset($_POST[KEY_FOLLOW_USER]) && isset($_SESSION[KEY_EMAIL]) && isset($_SES
 		$fp = stream_socket_client(SERVER_ADDR . ":" . SERVER_PORT, $errNo, $errStr);
 		if ($fp) {
 			// Send request to retrieve user details (email)
-			$request = FOLLOW_USER . DELIMINATER . $_SESSION[KEY_EMAIL] . DELIMINATER . $_SESSION[KEY_USER_TO_FOLLOW];
+			$request = FOLLOW_USER . DELIMITER . $_SESSION[KEY_EMAIL] . DELIMITER . $_SESSION[KEY_USER_TO_FOLLOW];
 			fputs($fp, $request, strlen($request));
 
 			// Analyse server's response
 			$response = trim(fgets($fp));
-			if(strcmp($response, FOLLOW_USER.DELIMINATER.SUCCESS) == 0){
+			if(strcmp($response, FOLLOW_USER.DELIMITER.SUCCESS) == 0){
 				$_SESSION[KEY_MESSAGE] = $_SESSION[KEY_USER_TO_FOLLOW];
 			}
 			fclose($fp);

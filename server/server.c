@@ -44,7 +44,7 @@
 #define UNKNOWN_REQUEST     "UNKNOW"
 #define SUCCESS             "YES"
 #define FAILURE             "NO"
-#define DELIMINATER         "~"
+#define DELIMITER           "~"
 
 /*  Functions prototypes  */
 int  initialize_server(int);
@@ -174,7 +174,7 @@ void  authenticate_user(char* request, char* response)
 {
     char data[MAX_REQUEST_ENTITIES][MAX_ENTITY_LENGTH];
     bzero(data, sizeof(data));
-    explode(request, DELIMINATER, data);
+    explode(request, DELIMITER, data);
     if(data[0] != NULL && data[1] != NULL)
     {
         char file_name[MAX_ENTITY_LENGTH];
@@ -197,7 +197,7 @@ void  authenticate_user(char* request, char* response)
                     if(strcmp(user[0], data[1]) == 0 &&
                             strcmp(user[1], data[2]) == 0)
                     {
-                        sprintf(response, "%s%s%s", AUTHENTICATE_USER, DELIMINATER, SUCCESS);
+                        sprintf(response, "%s%s%s", AUTHENTICATE_USER, DELIMITER, SUCCESS);
                         fclose(file);
                         return;
                     }
@@ -207,7 +207,7 @@ void  authenticate_user(char* request, char* response)
             fclose(file);
         }
     }
-    sprintf(response, "%s%s%s", AUTHENTICATE_USER, DELIMINATER, FAILURE);
+    sprintf(response, "%s%s%s", AUTHENTICATE_USER, DELIMITER, FAILURE);
 }
 
 /*  Add new user if not existing    */
@@ -215,7 +215,7 @@ void  add_user(char* request, char* response)
 {
     char data[MAX_REQUEST_ENTITIES][MAX_ENTITY_LENGTH];
     bzero(data, sizeof(data));
-    explode(request, DELIMINATER, data);
+    explode(request, DELIMITER, data);
 
     if(data[0] != NULL && data[1] != NULL && data[2] != NULL &&
             data[3] != NULL && data[4] != NULL )
@@ -239,7 +239,7 @@ void  add_user(char* request, char* response)
                     if(strcmp(data[1], user[0]) == 0)
                     {
                         // Exists a user with the same email
-                        sprintf(response, "%s%s%s", ADD_USER, DELIMINATER, FAILURE);
+                        sprintf(response, "%s%s%s", ADD_USER, DELIMITER, FAILURE);
                         return;
                     }
                 }
@@ -266,10 +266,10 @@ void  add_user(char* request, char* response)
         fclose(file);
         chmod(file_name, FILE_MODE);
 
-        sprintf(file_name, "%s%s%s", ADD_USER, DELIMINATER, SUCCESS);
+        sprintf(file_name, "%s%s%s", ADD_USER, DELIMITER, SUCCESS);
         return;
     }
-    sprintf(response, "%s%s%s", ADD_USER, DELIMINATER, FAILURE);
+    sprintf(response, "%s%s%s", ADD_USER, DELIMITER, FAILURE);
 }
 
 /*  Remove user and his/her data from the records   */
@@ -279,7 +279,7 @@ void  remove_user(char* request, char* response)
     char new_data[MAX_REQUEST_ENTITIES][MAX_ENTITY_LENGTH];
     bzero(data, sizeof(data));
     bzero(new_data, sizeof(new_data));
-    explode(request, DELIMINATER, data);
+    explode(request, DELIMITER, data);
     int pos = 0;
     if(data[0] != NULL && data[1] != NULL)
     {
@@ -326,7 +326,7 @@ void  remove_user(char* request, char* response)
         while(K < pos)  fputs(new_data[K++], file);
         fclose(file);
     }
-    sprintf(response, "%s%s%s", REMOVE_USER, DELIMINATER, SUCCESS);
+    sprintf(response, "%s%s%s", REMOVE_USER, DELIMITER, SUCCESS);
 }
 
 /*  Follow the given user   */
@@ -334,7 +334,7 @@ void  follow_user(char* request, char* response)
 {
     char data[MAX_REQUEST_ENTITIES][MAX_ENTITY_LENGTH];
     bzero(data, sizeof(data));
-    explode(request, DELIMINATER, data);
+    explode(request, DELIMITER, data);
     if(data[1] != NULL && data[2] != NULL)
     {
         char file_name[MAX_ENTITY_LENGTH];
@@ -348,7 +348,7 @@ void  follow_user(char* request, char* response)
             fclose(file);
         }
     }
-    sprintf(response, "%s%s%s", FOLLOW_USER, DELIMINATER, SUCCESS);
+    sprintf(response, "%s%s%s", FOLLOW_USER, DELIMITER, SUCCESS);
 }
 
 /*  Remove user from the followed list  */
@@ -358,7 +358,7 @@ void  unfollow_users(char* request, char* response)
     char new_data[MAX_REQUEST_ENTITIES][MAX_ENTITY_LENGTH];
     bzero(data, sizeof(data));
     bzero(new_data, sizeof(new_data));
-    explode(request, DELIMINATER, data);
+    explode(request, DELIMITER, data);
     int pos = 0;
     if(data[0] != NULL && data[1] != NULL)
     {
@@ -403,7 +403,7 @@ void  unfollow_users(char* request, char* response)
         }
         fclose(file);
     }
-    sprintf(response, "%s%s%s", UNFOLLOW_USERS, DELIMINATER, SUCCESS);
+    sprintf(response, "%s%s%s", UNFOLLOW_USERS, DELIMITER, SUCCESS);
 }
 
 /*  Pull user detail (email)    */
@@ -411,7 +411,7 @@ void  get_user(char* request, char* response)
 {
     char data[MAX_REQUEST_ENTITIES][MAX_ENTITY_LENGTH];
     bzero(data, sizeof(data));
-    explode(request, DELIMINATER, data);
+    explode(request, DELIMITER, data);
     if( data[0] != NULL && data[1] != NULL)
     {
         char file_name[MAX_ENTITY_LENGTH];
@@ -435,7 +435,7 @@ void  get_user(char* request, char* response)
                             strcmp(user[2], data[1]) == 0 ||
                             strcmp(user[3], data[1]) == 0 )
                     {
-                        sprintf(response, "%s%s%s", GET_USER, DELIMINATER, user[0]);
+                        sprintf(response, "%s%s%s", GET_USER, DELIMITER, user[0]);
                         fclose(file);
                         return;
                     }
@@ -445,7 +445,7 @@ void  get_user(char* request, char* response)
             fclose(file);
         }
     }
-    sprintf(response, "%s%s%s", GET_USER, DELIMINATER, FAILURE);
+    sprintf(response, "%s%s%s", GET_USER, DELIMITER, FAILURE);
 }
 
 /*  Pull all tweets for the user    */
@@ -453,7 +453,7 @@ void  get_user_tweets(char* request, char* response)
 {
     char data[MAX_REQUEST_ENTITIES][MAX_ENTITY_LENGTH];
     bzero(data, sizeof(data));
-    explode(request, DELIMINATER, data);
+    explode(request, DELIMITER, data);
     if(data[0] != NULL && data[1] != NULL)
     {
         char file_name[MAX_ENTITY_LENGTH];
@@ -469,7 +469,7 @@ void  get_user_tweets(char* request, char* response)
             while(!feof(file) && count < MAX_TWEETS)
             {
                 trim(line);
-                strcat(response, DELIMINATER);
+                strcat(response, DELIMITER);
                 strcat(response, line);
                 fgets(line,MAX_ENTITY_LENGTH, file);
                 count++;
@@ -484,7 +484,7 @@ void  put_user_tweet(char* request, char* response)
 {
     char data[MAX_REQUEST_ENTITIES][MAX_ENTITY_LENGTH];
     bzero(data, sizeof(data));
-    explode(request, DELIMINATER, data);
+    explode(request, DELIMITER, data);
     if( data[0] != NULL && data[1] != NULL && data[2] != NULL)
     {
         char file_name[MAX_ENTITY_LENGTH];
@@ -496,11 +496,11 @@ void  put_user_tweet(char* request, char* response)
             fputs(data[2], file);
             fputs("\n", file);
             fclose(file);
-            sprintf(response, "%s%s%s", PUT_USER_TWEET, DELIMINATER, SUCCESS);
+            sprintf(response, "%s%s%s", PUT_USER_TWEET, DELIMITER, SUCCESS);
             return;
         }
     }
-    sprintf(response, "%s%s%s", PUT_USER_TWEET, DELIMINATER, FAILURE);
+    sprintf(response, "%s%s%s", PUT_USER_TWEET, DELIMITER, FAILURE);
 }
 
 /*  Retrieve all users followed by the user     */
@@ -508,7 +508,7 @@ void get_followed_users(char* request, char* response)
 {
     char data[MAX_REQUEST_ENTITIES][MAX_ENTITY_LENGTH];
     bzero(data, sizeof(data));
-    explode(request, DELIMINATER, data);
+    explode(request, DELIMITER, data);
     if( data[0] != NULL && data[1] != NULL)
     {
         char file_name[MAX_ENTITY_LENGTH];
@@ -523,7 +523,7 @@ void get_followed_users(char* request, char* response)
             while(!feof(file))
             {
                 trim(line);
-                strcat(response, DELIMINATER);
+                strcat(response, DELIMITER);
                 strcat(response, line);
                 fgets(line,MAX_ENTITY_LENGTH, file);
             }
@@ -531,7 +531,7 @@ void get_followed_users(char* request, char* response)
             return;
         }
     }
-    sprintf(response, "%s%s%s", GET_FOLLOWED_USERS, DELIMINATER, FAILURE);
+    sprintf(response, "%s%s%s", GET_FOLLOWED_USERS, DELIMITER, FAILURE);
 }
 
 /*  Respond to the unknown request      */

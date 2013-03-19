@@ -42,4 +42,4 @@ NB: Only #1 "SETUP" is essential for setting up the and running system.
 	(b) Protocol Constants:	
 		> SUCCESS       "YES"
 		> FAILURE       "NO"
-		> DELIMINATER   "~"
+		> DELIMITER     "~"
