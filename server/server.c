@@ -9,6 +9,7 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
+#include<strings.h>
 #include<sys/stat.h>
 #include<unistd.h>
 
@@ -48,6 +49,7 @@
 /*  Global Constants   */
 #define TRUE                 1
 #define FALSE                0
+#define ERROR_FD             -1
 #define MAX_TWEETS           10
 #define HEADER_SIZE          6
 #define MAX_REQUEST_ENTITIES 5
@@ -58,6 +60,7 @@
 /*  Functions prototypes  */
 int  initialize_server(int);
 void run_server(int);
+void* talk_to_client(void*);
 void authenticate_user(char*, char*);
 void add_user(char*, char*);
 void remove_user(char*, char*);
@@ -93,7 +96,7 @@ int main(int argc, char* argv[])
 
     // Configure and start server
     int fd = initialize_server(port);
-    if(fd < 0) return 1;
+    if(fd == ERROR_FD) return 1;
     run_server(fd);
 
     return 0;
@@ -116,7 +119,7 @@ int initialize_server(int port)
     if(bind(server_fd, (struct sockaddr*) &server_addr, sizeof(server_addr)) < 0)
     {
         log_error("Binding server address");
-        return -1;
+        return ERROR_FD;
     }
     return server_fd;
 }
@@ -134,48 +137,58 @@ void run_server(int server_fd)
         int cli_fd = accept(server_fd, (struct sockaddr*) &cli_addr, &length);
         if(cli_fd < 0) log_error("Accepting client");
 
-        // Talk to the client
-        char request[BUFFER_SIZE];
-        bzero(request, sizeof(request));
-        if(read(cli_fd, request, BUFFER_SIZE))
-        {
-            // Analyse and respond to the request
-            //printf("REQUEST [%d](%s) ---> ", strlen(request), request);
-            char header[HEADER_SIZE+1];
-            bzero(header, sizeof(header));
-            strncpy(header, request, HEADER_SIZE);
-            char response[BUFFER_SIZE];
-            bzero(response, sizeof(response));
-
-            if(strcmp(header, AUTHENTICATE_USER) == 0)
-                authenticate_user(request, response);
-            else if(strcmp(header, ADD_USER) == 0)
-                add_user(request, response);
-            else if(strcmp(header, REMOVE_USER) == 0)
-                remove_user(request, response);
-            else if(strcmp(header, FOLLOW_USER) == 0)
-                follow_user(request, response);
-            else if(strcmp(header, UNFOLLOW_USERS) == 0)
-                unfollow_users(request, response);
-            else if(strcmp(header, GET_USER) == 0)
-                get_user(request, response);
-            else if(strcmp(header, GET_USER_TWEETS) == 0)
-                get_user_tweets(request, response);
-            else if(strcmp(header, PUT_USER_TWEET) == 0)
-                put_user_tweet(request, response);
-            else if(strcmp(header, GET_FOLLOWED_USERS) == 0)
-                get_followed_users(request, response);
-            else
-                unknown_request(response);
-
-            //printf("RESPONSE [%d](%s)\n\n", strlen(response), response);
-            if(write(cli_fd, response, strlen(response)) < 0 ) log_error("Replying to client");
-        }
-        else log_error("Talking to client");
-        close(cli_fd);
+        // Start a thread that will talk to the client
+        pthread_t thread;
+        pthread_create(&thread, NULL, talk_to_client, (void*) &cli_fd);
+        pthread_join(thread, NULL);
     }
 }
 
+/*  Talk to a client: receive request, analyse it and respond     */
+void* talk_to_client(void* fd)
+{
+    int* cli_fd = (int*) fd;    // Get client's socket descriptor
+
+    char request[BUFFER_SIZE];
+    bzero(request, sizeof(request));
+    if(read(*cli_fd, request, BUFFER_SIZE))
+    {
+        // Analyse and respond to the request
+        //printf("REQUEST [%d](%s) ---> ", strlen(request), request);
+        char header[HEADER_SIZE+1];
+        bzero(header, sizeof(header));
+        strncpy(header, request, HEADER_SIZE);
+        char response[BUFFER_SIZE];
+        bzero(response, sizeof(response));
+
+        if(strcmp(header, AUTHENTICATE_USER) == 0)
+            authenticate_user(request, response);
+        else if(strcmp(header, ADD_USER) == 0)
+            add_user(request, response);
+        else if(strcmp(header, REMOVE_USER) == 0)
+            remove_user(request, response);
+        else if(strcmp(header, FOLLOW_USER) == 0)
+            follow_user(request, response);
+        else if(strcmp(header, UNFOLLOW_USERS) == 0)
+            unfollow_users(request, response);
+        else if(strcmp(header, GET_USER) == 0)
+            get_user(request, response);
+        else if(strcmp(header, GET_USER_TWEETS) == 0)
+            get_user_tweets(request, response);
+        else if(strcmp(header, PUT_USER_TWEET) == 0)
+            put_user_tweet(request, response);
+        else if(strcmp(header, GET_FOLLOWED_USERS) == 0)
+            get_followed_users(request, response);
+        else
+            unknown_request(response);
+
+        //printf("RESPONSE [%d](%s)\n\n", strlen(response), response);
+        if(write(*cli_fd, response, strlen(response)) < 0 ) log_error("Replying to client");
+    }
+    else log_error("Talking to client");
+    close(*cli_fd);
+    return NULL;
+}
 
 /*  Validate user and password pair   */
 void  authenticate_user(char* request, char* response)
