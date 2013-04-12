@@ -4,24 +4,23 @@
  *  Date  : 15 March 2013
  */
 
+/*  IO, Types, System Calls Headers  */
+#include<ctype.h>
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
+#include<sys/stat.h>
+#include<unistd.h>
 
-#include<sys/socket.h>
-#include<sys/types.h>
+/*  PThreads Headers   */
+#include<pthread.h>
+
+/*  Sockets  Headers   */
 #include<netinet/in.h>
+#include<sys/types.h>
+#include<sys/socket.h>
 
-#define TRUE                 1
-#define FALSE                0
-#define MAX_TWEETS           10
-#define HEADER_SIZE          6
-#define MAX_REQUEST_ENTITIES 5
-#define MAX_ENTITY_LENGTH    160
-#define MAX_USER_DETAILS     4
-#define VALID_MINIMUM_DATA   5
-
-/*  Server details      */
+/*  Server Details     */
 #define TOTAL_CLIENTS   50
 #define DEFAULT_PORT    8888
 #define BUFFER_SIZE     8192
@@ -31,7 +30,7 @@
 #define TWEETS_EXT      ".tweets"
 #define FILE_MODE       0777
 
-/*  Protocol constants   */
+/*  Protocol Constants   */
 #define AUTHENTICATE_USER   "AUTUSR"
 #define ADD_USER            "ADDUSR"
 #define REMOVE_USER         "REMUSR"
@@ -45,6 +44,16 @@
 #define SUCCESS             "YES"
 #define FAILURE             "NO"
 #define DELIMITER           "~"
+
+/*  Global Constants   */
+#define TRUE                 1
+#define FALSE                0
+#define MAX_TWEETS           10
+#define HEADER_SIZE          6
+#define MAX_REQUEST_ENTITIES 5
+#define MAX_ENTITY_LENGTH    160
+#define MAX_USER_DETAILS     4
+#define VALID_MINIMUM_DATA   5
 
 /*  Functions prototypes  */
 int  initialize_server(int);
@@ -64,7 +73,7 @@ void lower_case(char[]);
 void trim(char*);
 void log_error(char*);
 
-
+/*  Main   */
 int main(int argc, char* argv[])
 {
     // Set up server's port number
@@ -89,7 +98,6 @@ int main(int argc, char* argv[])
 
     return 0;
 }
-
 
 /*  Create server objects and bind them together  */
 int initialize_server(int port)
@@ -380,13 +388,12 @@ void  unfollow_users(char* request, char* response)
                     int K = 2;
                     while(TRUE)
                     {
-                        if(strlen(data[K]) < VALID_MINIMUM_DATA) break;
-                        if(strcmp(line, data[K++]) != 0)
-                        {
-                            strcpy(new_data[pos++], line);
-                            break;
-                        }
+                        if(strlen(data[K]) < VALID_MINIMUM_DATA ||
+                           strcmp(line, data[K]) == 0)  break;
+                        else K++;
                     }
+                    if(strlen(data[K]) < VALID_MINIMUM_DATA)
+                        strcpy(new_data[pos++], line);
                 }
                 fgets(line,MAX_ENTITY_LENGTH, file);
             }
@@ -559,7 +566,7 @@ void lower_case(char line[MAX_ENTITY_LENGTH])
     while(K++ < MAX_ENTITY_LENGTH) line[K] = tolower(line[K]);
 }
 
-/*  Remove whitespace from string   */
+/*  Remove whitespace from a string   */
 void trim(char* str)
 {
     int K = strlen(str) - 1;

@@ -14,9 +14,24 @@ NB: Only #1 "SETUP" is essential for setting up the and running system.
 	(d) By default the server location is "localhost", if changed the "SERVER_ADDR" 
 		in "fsowan01/protocol.php" should also be modified.
 	
+2. SAMPLE USERS:
+	I have created three sample users with the following details:
+	(a) Email:		sample1@gmail.com
+		Password:	sample1
+		First Name:	Sample1
+		Last Name:	User
 	
+	(b) Email:		sample2@gmail.com
+		Password:	sample2
+		First Name:	Sample2
+		Last Name:	User
 		
-2. PROTOCOL:
+	(c) Email:		sample3@gmail.com
+		Password:	sample3
+		First Name:	Sample3
+		Last Name:	User
+		
+3. PROTOCOL:
 	(a) Requests formats:
 		> Authenticate User :   
 			AUTUSR <email> <password>
@@ -42,4 +57,4 @@ NB: Only #1 "SETUP" is essential for setting up the and running system.
 	(b) Protocol Constants:	
 		> SUCCESS       "YES"
 		> FAILURE       "NO"
-		> DELIMITER     "~"
+		> DELIMINATER   "~"
