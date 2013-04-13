@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-Wall -pthread -std=c99
+CFLAGS=-Wall -pthread -lpthread -std=c99
 TARGET=server
 
 all:

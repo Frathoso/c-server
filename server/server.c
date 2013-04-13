@@ -1,7 +1,7 @@
 /*  Author: Francis Sowani
  *  Instr : Prof. John Sterling
  *  Course: Parallel and Distributed Systems
- *  Date  : 15 March 2013
+ *  Date  : 12 April 2013
  */
 
 /*  IO, Types, System Calls Headers  */
@@ -57,24 +57,28 @@
 #define MAX_USER_DETAILS     4
 #define VALID_MINIMUM_DATA   5
 
+/*  File Locks and Conditional Variables         */
+pthread_mutex_t mutx_users_file = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t  cond_users_file = PTHREAD_COND_INITIALIZER;
+
 /*  Functions prototypes  */
-int  initialize_server(int);
-void run_server(int);
+int   initialize_server(int);
+void  run_server(int);
 void* talk_to_client(void*);
-void authenticate_user(char*, char*);
-void add_user(char*, char*);
-void remove_user(char*, char*);
-void follow_user(char*, char*);
-void unfollow_users(char*, char*);
-void get_user(char*, char*);
-void get_user_tweets(char*, char*);
-void put_user_tweet(char*, char*);
-void get_followed_users(char*, char*);
-void unknown_request(char*);
-void explode(char*, char*, char[][MAX_ENTITY_LENGTH]);
-void lower_case(char[]);
-void trim(char*);
-void log_error(char*);
+void  authenticate_user(char*, char*);
+void  add_user(char*, char*);
+void  remove_user(char*, char*);
+void  follow_user(char*, char*);
+void  unfollow_users(char*, char*);
+void  get_user(char*, char*);
+void  get_user_tweets(char*, char*);
+void  put_user_tweet(char*, char*);
+void  get_followed_users(char*, char*);
+void  unknown_request(char*);
+void  explode(char*, char*, char[][MAX_ENTITY_LENGTH]);
+void  lower_case(char[]);
+void  trim(char*);
+void  log_error(char*);
 
 /*  Main   */
 int main(int argc, char* argv[])
@@ -243,6 +247,9 @@ void  add_user(char* request, char* response)
     {
         char file_name[MAX_ENTITY_LENGTH];
         sprintf(file_name, "%s%s", DATA_ROOT, USERS_FILENAME);
+
+        while(pthread_mutex_trylock(&mutx_users_file))  // Try to lock the Users' file
+            pthread_cond_wait(&cond_users_file, &mutx_users_file);
         FILE* file = fopen(file_name, "r");
         if(file)
         {
@@ -275,6 +282,8 @@ void  add_user(char* request, char* response)
         file = fopen(file_name, "a");
         fputs(record, file);
         fclose(file);
+        pthread_mutex_unlock(&mutx_users_file);   // Release the Users' file
+        pthread_cond_broadcast(&cond_users_file); // Broadcast to the waiting threads
 
         // Create tweets and followed-users files for the new user
         sprintf(file_name, "%s%s%s", DATA_ROOT, data[1], FOLLOW_EXT);
@@ -306,6 +315,9 @@ void  remove_user(char* request, char* response)
     {
         char file_name[MAX_ENTITY_LENGTH];
         sprintf(file_name, "%s%s", DATA_ROOT, USERS_FILENAME);
+
+        while(pthread_mutex_trylock(&mutx_users_file))   // Try to lock the Users' file
+            pthread_cond_wait(&cond_users_file, &mutx_users_file);
         FILE* file = fopen(file_name, "r");
 
         if(file)
@@ -346,6 +358,8 @@ void  remove_user(char* request, char* response)
         int K = 0;
         while(K < pos)  fputs(new_data[K++], file);
         fclose(file);
+        pthread_mutex_unlock(&mutx_users_file);   // Release Users' file
+        pthread_cond_broadcast(&cond_users_file); // Broadcast to the waiting threads
     }
     sprintf(response, "%s%s%s", REMOVE_USER, DELIMITER, SUCCESS);
 }
@@ -563,7 +577,9 @@ void unknown_request(char* response)
 /*  Separate the request into individual entities   */
 void explode(char* request, char* del, char data [MAX_REQUEST_ENTITIES][MAX_ENTITY_LENGTH])
 {
-    char* req = strtok(request, del);
+    char line[MAX_ENTITY_LENGTH];
+    strcpy(line, request);
+    char* req = strtok(line, del);
     int pos = 0;
     while(req != NULL)
     {
