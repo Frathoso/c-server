@@ -40,6 +40,7 @@ if (isset($_POST[KEY_TWEET]) && isset($_SESSION[KEY_EMAIL])) {
 					if (isset($_SESSION[KEY_EMAIL])) {
 						echo "<span id='follow'><a href='follow.php'>Follow New People</a></span>";
 						echo "<span id='unfollow'><a href='unfollow.php'>Unfollow People</a></span>";
+						echo "<span id='delete-account'><a href='delete-account.php'>Delete Account</a></span>";
 						echo "<span id='log-out'><a href='logout.php'>Log Out</a></span>";
 					}
 					?>

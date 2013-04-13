@@ -38,15 +38,26 @@ body {
 	border: 1px solid green;
 	padding: 10px 10px 0px 10px;
 }
+a{
+	font-size: 15px;
+}
 #follow {
 	margin-left: 50px;
 }
 #unfollow {
 	margin-left: 50px;
 }
+#delete-account {
+	margin-left: 50px;
+}
+#delete-account a {
+	text-decoration: underline;
+	color: red;
+	
+}
 #log-out {
 	float: right;
-	margin-right: 30px;
+	margin-right: 10px;
 }
 
 #home-body {
@@ -84,6 +95,10 @@ body {
 .button {
 	height: 25px;
 	width: 100px;
+}
+.button-long {
+	height: 25px;
+	width: 200px;
 }
 .field {
 	margin: 10px;
