@@ -1,7 +1,7 @@
 <?php
 // Server details
-define("SERVER_ADDR", 'tcp://localhost');
-define("SERVER_PORT", 8888);
+$SERVERS = array(array('tcp://localhost', 8800), array('tcp://localhost', 8801), array('tcp://localhost', 8802));
+
 define("BUFFER_SIZE", 8192);
 
 define("HOME_PAGE", 'home.php');

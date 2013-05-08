@@ -5,22 +5,30 @@ session_start();
 
 // Check if a new tweet is being posted by user
 if (isset($_POST[KEY_TWEET]) && isset($_SESSION[KEY_EMAIL])) {
-	// Upload the tweet
-	try {
-		$errNo = $errStr = "";
-		$fp = stream_socket_client(SERVER_ADDR . ":" . SERVER_PORT, $errNo, $errStr, 0);
-		if ($fp) {
-			$request = PUT_USER_TWEET . DELIMITER . $_SESSION[KEY_EMAIL] . DELIMITER . $_POST[KEY_TWEET];
-			fputs($fp, $request, strlen($request));
+	$serversCount = count($SERVERS);
+	$currServer = -1;
 
-			$response = fgets($fp);
-			// response is not used for now
-			fclose($fp);
-		} else {
-			echo "Error: $errStr";
+	while (++$currServer < $serversCount) {
+		try {
+			// Connect to the remote host
+			$address = $SERVERS[$currServer][0];
+			$port = intval($SERVERS[$currServer][1]);
+			$errNo = $errStr = "";
+			$fp = stream_socket_client($address . ":" . $port, $errNo, $errStr, 0);
+			if ($fp) {
+				$request = PUT_USER_TWEET . DELIMITER . $_SESSION[KEY_EMAIL] . DELIMITER . $_POST[KEY_TWEET];
+				fputs($fp, $request, strlen($request));
+
+				$response = fgets($fp);
+				// response is not used for now
+				fclose($fp);
+				break;
+			} else {
+				//echo "Error: $errStr";
+			}
+		} catch(exception $ex) {
+			//echo "Error---: $ex";
 		}
-	} catch(exception $ex) {
-		echo "Error: $ex";
 	}
 }
 ?>
@@ -54,45 +62,54 @@ if (isset($_POST[KEY_TWEET]) && isset($_SESSION[KEY_EMAIL])) {
 					</div>
 					<?php
 					if (isset($_SESSION[KEY_EMAIL])) {
-						try {
-							$errNo = $errStr = "";
-							$fp = stream_socket_client(SERVER_ADDR . ":" . SERVER_PORT, $errNo, $errStr, 0);
-							if ($fp) {
-								/* Retrieve and display tweets for the user */
-								$request = GET_USER_TWEETS . DELIMITER . $_SESSION[KEY_EMAIL];
-								fputs($fp, $request, strlen($request));
-								$response = trim(fgets($fp));
-								fclose($fp);
+						$serversCount = count($SERVERS);
+						$currServer = -1;
 
-								if (strcmp($response, GET_USER_TWEETS . DELIMITER . FAILURE) != 0) {
-									displayTweets($_SESSION[KEY_EMAIL], $response);
-								}
+						while (++$currServer < $serversCount) {
+							try {
+								// Connect to the remote host
+								$address = $SERVERS[$currServer][0];
+								$port = intval($SERVERS[$currServer][1]);
+								$errNo = $errStr = "";
+								$fp = stream_socket_client($address . ":" . $port, $errNo, $errStr, 0);
+								if ($fp) {
+									/* Retrieve and display tweets for the user */
+									$request = GET_USER_TWEETS . DELIMITER . $_SESSION[KEY_EMAIL];
+									fputs($fp, $request, strlen($request));
+									$response = trim(fgets($fp));
+									fclose($fp);
 
-								/* Retrieve and display tweets for users being followed */
-								// Get all users being followed
-								$request = GET_FOLLOWED_USERS . DELIMITER . $_SESSION[KEY_EMAIL];
-								$fp = stream_socket_client(SERVER_ADDR . ":" . SERVER_PORT, $errNo, $errStr, 0);
-								fputs($fp, $request, strlen($request));
-								$response = trim(fgets($fp));
-								fclose($fp);
-
-								// Retrieve users' tweets if available
-								if (strcmp($response, GET_FOLLOWED_USERS . DELIMITER . FAILURE) != 0) {
-									$followedUsers = explode(DELIMITER, $response);
-									for ($K = 1; $K < count($followedUsers); $K++) {
-										$fp = stream_socket_client(SERVER_ADDR . ":" . SERVER_PORT, $errNo, $errStr, 0);
-										$request = GET_USER_TWEETS . DELIMITER . trim($followedUsers[$K]);
-										fputs($fp, $request, strlen($request));
-										$response = trim(fgets($fp));
-										fclose($fp);
-										displayTweets($followedUsers[$K], $response);
+									if (strcmp($response, GET_USER_TWEETS . DELIMITER . FAILURE) != 0) {
+										displayTweets($_SESSION[KEY_EMAIL], $response);
 									}
+
+									/* Retrieve and display tweets for users being followed */
+									// Get all users being followed
+									$request = GET_FOLLOWED_USERS . DELIMITER . $_SESSION[KEY_EMAIL];
+									$fp = stream_socket_client(SERVER_ADDR . ":" . SERVER_PORT, $errNo, $errStr, 0);
+									fputs($fp, $request, strlen($request));
+									$response = trim(fgets($fp));
+									fclose($fp);
+
+									// Retrieve users' tweets if available
+									if (strcmp($response, GET_FOLLOWED_USERS . DELIMITER . FAILURE) != 0) {
+										$followedUsers = explode(DELIMITER, $response);
+										for ($K = 1; $K < count($followedUsers); $K++) {
+											$fp = stream_socket_client(SERVER_ADDR . ":" . SERVER_PORT, $errNo, $errStr, 0);
+											$request = GET_USER_TWEETS . DELIMITER . trim($followedUsers[$K]);
+											fputs($fp, $request, strlen($request));
+											$response = trim(fgets($fp));
+											fclose($fp);
+											displayTweets($followedUsers[$K], $response);
+										}
+									}
+									break;
+								} else {
+									//echo "Error [$errNo] : $errStr";
 								}
-							} else {
-								echo "Error [$errNo] : $errStr";
+							} catch(exception $ex) {
+								//echo "Error: $ex";
 							}
-						} catch(exception $ex) {
-							echo "Error: $ex";
 						}
 					} else {
 						// No user has logged in, display login/sign-up links

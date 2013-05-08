@@ -1,7 +1,7 @@
 /*  Author: Francis Sowani
  *  Instr : Prof. John Sterling
  *  Course: Parallel and Distributed Systems
- *  Date  : 12 April 2013
+ *  Date  : 7 May 2013
  */
 
 /*  IO, Types, System Calls Headers  */
@@ -23,10 +23,10 @@
 
 /*  Server Details     */
 #define TOTAL_CLIENTS   50
-#define DEFAULT_PORT    8888
 #define BUFFER_SIZE     8192
 #define DATA_ROOT       "data/"
 #define USERS_FILENAME  "users"
+#define CONFIG_FILENAME "config_server"
 #define FOLLOW_EXT      ".follow"
 #define TWEETS_EXT      ".tweets"
 #define FILE_MODE       0777
@@ -65,6 +65,7 @@ pthread_cond_t  cond_users_file = PTHREAD_COND_INITIALIZER;
 int   initialize_server(int);
 void  run_server(int);
 void* talk_to_client(void*);
+void* replicate_change(void*);
 void  authenticate_user(char*, char*);
 void  add_user(char*, char*);
 void  remove_user(char*, char*);
@@ -83,20 +84,26 @@ void  log_error(char*);
 /*  Main   */
 int main(int argc, char* argv[])
 {
-    // Set up server's port number
-    int port;
-    if(argc == 2)
-        port = atoi(argv[1]);
-    else if(argc > 2)
-    {
-        log_error("Wrong number of arguments!\nUsage: ./server [port no]\n");
-        exit(1);
-    }
-    else
-        port = DEFAULT_PORT;
-
     // Prepare errors log file
     freopen("error_log.txt", "a", stderr);
+
+    // Set up server's port number
+    FILE* config_file = fopen(CONFIG_FILENAME, "r");
+    if(config_file == NULL) log_error("Configuration file not found");
+
+    int port, id, temp_id, temp_port;
+    char temp_addr[MAX_ENTITY_LENGTH];
+    fscanf(config_file, "id =%d", &id); // read the server id
+    while(!feof(config_file))
+    {
+        fscanf(config_file, "%d%d", &temp_id, &temp_port);
+        fgets(temp_addr, MAX_ENTITY_LENGTH, config_file);
+        if(temp_id == id)
+        {
+            port = temp_port;
+            break;
+        }
+    }
 
     // Configure and start server
     int fd = initialize_server(port);
@@ -192,6 +199,13 @@ void* talk_to_client(void* fd)
     else log_error("Talking to client");
     close(*cli_fd);
     return NULL;
+}
+
+/*  Send changes to other live servers   */
+void* replicate_change(void* arg)
+{
+
+
 }
 
 /*  Validate user and password pair   */

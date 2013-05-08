@@ -1,33 +1,41 @@
 <?php
-include_once('protocol.php');
+include_once ('protocol.php');
 
 session_start();
 
 // Search if a user exists with "query" details
 if (isset($_POST[KEY_QUERY])) {
-	try {
-		// Connect to the remote host
-		$errNo = $errStr = "";
-		$fp = stream_socket_client(SERVER_ADDR . ":" . SERVER_PORT, $errNo, $errStr);
-		if ($fp) {
-			// Send request to retrieve user details (email)
-			$request = GET_USER . DELIMITER . strtolower(trim($_POST[KEY_QUERY]));
-			fputs($fp, $request, strlen($request));
+	$serversCount = count($SERVERS);
+	$currServer = -1;
 
-			// Analyse server's response
-			$results = trim(fgets($fp));
-			fclose($fp);
-			if ($results) {
-				if (strcmp($results, GET_USER . DELIMITER . FAILURE) != 0) {
-					$reqArray = explode(DELIMITER, $results);
-					$_SESSION[KEY_USER_TO_FOLLOW] = $reqArray[1];
+	while (++$currServer < $serversCount) {
+		try {
+			// Connect to the remote host
+			$address = $SERVERS[$currServer][0];
+			$port = intval($SERVERS[$currServer][1]);
+			$errNo = $errStr = "";
+			$fp = stream_socket_client($address . ":" . $port, $errNo, $errStr);
+			if ($fp) {
+				// Send request to retrieve user details (email)
+				$request = GET_USER . DELIMITER . strtolower(trim($_POST[KEY_QUERY]));
+				fputs($fp, $request, strlen($request));
+
+				// Analyse server's response
+				$results = trim(fgets($fp));
+				fclose($fp);
+				if ($results) {
+					if (strcmp($results, GET_USER . DELIMITER . FAILURE) != 0) {
+						$reqArray = explode(DELIMITER, $results);
+						$_SESSION[KEY_USER_TO_FOLLOW] = $reqArray[1];
+					}
 				}
+				break;
+			} else {
+				//echo "Error Connecting: " . $errNo . ": " . $errStr;
 			}
-		} else {
-			echo "Error Connecting: " . $errNo . ": " . $errStr;
+		} catch(exception $ex) {
+			//echo "<br> Error: " . $ex;
 		}
-	} catch(exception $ex) {
-		echo "<br> Error: " . $ex;
 	}
 }
 
@@ -35,26 +43,34 @@ if (isset($_POST[KEY_QUERY])) {
 if (isset($_POST[KEY_FOLLOW_USER]) && isset($_SESSION[KEY_EMAIL]) && isset($_SESSION[KEY_USER_TO_FOLLOW])) {
 	// TODO: check if the user is already followed
 
-	try {
-		// Connect to the remote host
-		$errNo = $errStr = "";
-		$fp = stream_socket_client(SERVER_ADDR . ":" . SERVER_PORT, $errNo, $errStr);
-		if ($fp) {
-			// Send request to retrieve user details (email)
-			$request = FOLLOW_USER . DELIMITER . $_SESSION[KEY_EMAIL] . DELIMITER . $_SESSION[KEY_USER_TO_FOLLOW];
-			fputs($fp, $request, strlen($request));
+	$serversCount = count($SERVERS);
+	$currServer = -1;
 
-			// Analyse server's response
-			$response = trim(fgets($fp));
-			if(strcmp($response, FOLLOW_USER.DELIMITER.SUCCESS) == 0){
-				$_SESSION[KEY_MESSAGE] = $_SESSION[KEY_USER_TO_FOLLOW];
+	while (++$currServer < $serversCount) {
+		try {
+			// Connect to the remote host
+			$address = $SERVERS[$currServer][0];
+			$port = intval($SERVERS[$currServer][1]);
+			$errNo = $errStr = "";
+			$fp = stream_socket_client($address . ":" . $port, $errNo, $errStr);
+			if ($fp) {
+				// Send request to retrieve user details (email)
+				$request = FOLLOW_USER . DELIMITER . $_SESSION[KEY_EMAIL] . DELIMITER . $_SESSION[KEY_USER_TO_FOLLOW];
+				fputs($fp, $request, strlen($request));
+
+				// Analyse server's response
+				$response = trim(fgets($fp));
+				if (strcmp($response, FOLLOW_USER . DELIMITER . SUCCESS) == 0) {
+					$_SESSION[KEY_MESSAGE] = $_SESSION[KEY_USER_TO_FOLLOW];
+				}
+				fclose($fp);
+				break;
+			} else {
+				//echo "Error Connecting: " . $errNo . ": " . $errStr;
 			}
-			fclose($fp);
-		} else {
-			echo "Error Connecting: " . $errNo . ": " . $errStr;
+		} catch(exception $ex) {
+			//echo "<br> Error: " . $ex;
 		}
-	} catch(exception $ex) {
-		echo "<br> Error: " . $ex;
 	}
 
 	// Remove the user-to-be-followed tag
@@ -88,8 +104,8 @@ if (isset($_POST[KEY_FOLLOW_USER]) && isset($_SESSION[KEY_EMAIL]) && isset($_SES
 							echo $form;
 						} else if (isset($_POST[KEY_QUERY])) {
 							echo "User not available";
-						}else if(isset($_SESSION[KEY_MESSAGE])){
-							echo "You're now following <b>".$_SESSION[KEY_MESSAGE]."<b>";
+						} else if (isset($_SESSION[KEY_MESSAGE])) {
+							echo "You're now following <b>" . $_SESSION[KEY_MESSAGE] . "<b>";
 							unset($_SESSION[KEY_MESSAGE]);
 						}
 						?>

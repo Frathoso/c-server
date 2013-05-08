@@ -5,26 +5,34 @@ session_start();
 
 // Unfollow all selelected users
 if (isset($_POST[KEY_UNFOLLOW]) && isset($_SESSION[KEY_EMAIL])) {
-	try {
-		// Connect to the remote host
-		$errNo = $errStr = "";
-		$fp = stream_socket_client(SERVER_ADDR . ":" . SERVER_PORT, $errNo, $errStr);
-		if ($fp) {
-			// Send request to retrieve user details (email)
-			$request = UNFOLLOW_USERS . DELIMITER . $_SESSION[KEY_EMAIL];
-			foreach ($_POST[KEY_UNFOLLOW] as $key => $selectedName) {
-				$request .= DELIMITER . trim($selectedName);
-			}
-			fputs($fp, $request, strlen($request));
+	$serversCount = count($SERVERS);
+	$currServer = -1;
 
-			// Analyse server's response
-			$results = trim(fgets($fp));
-			fclose($fp);
-		} else {
-			echo "Error Connecting: " . $errNo . ": " . $errStr;
+	while (++$currServer < $serversCount) {
+		try {
+			// Connect to the remote host
+			$address = $SERVERS[$currServer][0];
+			$port = intval($SERVERS[$currServer][1]);
+			$errNo = $errStr = "";
+			$fp = stream_socket_client($address . ":" . $port, $errNo, $errStr);
+			if ($fp) {
+				// Send request to retrieve user details (email)
+				$request = UNFOLLOW_USERS . DELIMITER . $_SESSION[KEY_EMAIL];
+				foreach ($_POST[KEY_UNFOLLOW] as $key => $selectedName) {
+					$request .= DELIMITER . trim($selectedName);
+				}
+				fputs($fp, $request, strlen($request));
+
+				// Analyse server's response
+				$results = trim(fgets($fp));
+				fclose($fp);
+				break;
+			} else {
+				//echo "Error Connecting: " . $errNo . ": " . $errStr;
+			}
+		} catch(exception $ex) {
+			//echo "<br> Error: " . $ex;
 		}
-	} catch(exception $ex) {
-		echo "<br> Error: " . $ex;
 	}
 }
 ?>
@@ -46,45 +54,53 @@ if (isset($_POST[KEY_UNFOLLOW]) && isset($_SESSION[KEY_EMAIL])) {
 						<form method="post" action="unfollow.php">
 							<?php
 							// Request for all users being followed
-							try {
-								// Connect to the remote host
-								$errNo = $errStr = "";
-								$fp = stream_socket_client(SERVER_ADDR . ":" . SERVER_PORT, $errNo, $errStr);
-								if ($fp) {
-									// Send request to retrieve user details (email)
-									$request = GET_FOLLOWED_USERS . DELIMITER . $_SESSION[KEY_EMAIL];
-									fputs($fp, $request, strlen($request));
+							$serversCount = count($SERVERS);
+							$currServer = -1;
 
-									// Analyse server's response
-									while (!feof($fp)) {
-										$results = trim(fgets($fp));
-										if ($results) {
-											if (strcmp($results, GET_FOLLOWED_USERS . DELIMITER . FAILURE) == 0) {
-												break;
-											}
-											$users = explode(DELIMITER, $results);
-											//for ($K = 0; $K < count($users); $K++) {
-											foreach ($users as $key => $user) {
-												if (strcmp($user, GET_FOLLOWED_USERS) == 0 || strlen($user) < 5) {
-													continue;
+							while (++$currServer < $serversCount) {
+								try {
+									// Connect to the remote host
+									$address = $SERVERS[$currServer][0];
+									$port = intval($SERVERS[$currServer][1]);
+									$errNo = $errStr = "";
+									$fp = stream_socket_client($address . ":" . $port, $errNo, $errStr);
+									if ($fp) {
+										// Send request to retrieve user details (email)
+										$request = GET_FOLLOWED_USERS . DELIMITER . $_SESSION[KEY_EMAIL];
+										fputs($fp, $request, strlen($request));
+
+										// Analyse server's response
+										while (!feof($fp)) {
+											$results = trim(fgets($fp));
+											if ($results) {
+												if (strcmp($results, GET_FOLLOWED_USERS . DELIMITER . FAILURE) == 0) {
+													break;
 												}
-												echo $user . '<input type="checkbox" name="unfollow[' . $user . ']" value="' . $user . '"><br>';
+												$users = explode(DELIMITER, $results);
+												//for ($K = 0; $K < count($users); $K++) {
+												foreach ($users as $key => $user) {
+													if (strcmp($user, GET_FOLLOWED_USERS) == 0 || strlen($user) < 5) {
+														continue;
+													}
+													echo $user . '<input type="checkbox" name="unfollow[' . $user . ']" value="' . $user . '"><br>';
+												}
 											}
 										}
+										fclose($fp);
+										break;
+									} else {
+										//echo "Error Connecting: " . $errNo . ": " . $errStr;
 									}
-									fclose($fp);
-								} else {
-									echo "Error Connecting: " . $errNo . ": " . $errStr;
+								} catch(exception $ex) {
+									//echo "<br> Error: " . $ex;
 								}
-							} catch(exception $ex) {
-								echo "<br> Error: " . $ex;
 							}
 						?>
-							<input type="submit" value="Unfollow Selected People" class="button" style="width:200px">
-						</form>
-					</div>
-				</div>
-			</div>
-		</div>
-	</body>
+<input type="submit" value="Unfollow Selected People" class="button" style="width:200px">
+</form>
+</div>
+</div>
+</div>
+</div>
+</body>
 </html>

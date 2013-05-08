@@ -1,11 +1,11 @@
-NB: Only #1 "SETUP" is essential for setting up the and running system.
+NB: Only (1) "SETUP" is essential for setting up the and running system.
 
 1. SETUP:
 	(a) Directories for the SITE:
 		> "fsowan01/"	 --> is the public root folder for the site
 	
 	(b) Directories for the SERVER:
-		> "server/"		 --> contains the C files for the server
+		> "server/"	 --> contains the C files for the server
 		> "server/data/" --> contains data for the site
 		
 	(c) If the server is started with a custom port (8888), the port should also be 

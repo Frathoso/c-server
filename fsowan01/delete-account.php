@@ -1,33 +1,41 @@
 <?php
-include_once('protocol.php');
+include_once ('protocol.php');
 
 session_start();
 
 // Remove user
 if (isset($_GET["key"]) && isset($_SESSION[KEY_EMAIL])) {
-	try {
-		// Connect to the remote host
-		$errNo = $errStr = "";
-		$fp = stream_socket_client(SERVER_ADDR . ":" . SERVER_PORT, $errNo, $errStr);
-		if ($fp) {
-			// Send request to remove user
-			$request = REMOVE_USER . DELIMITER . $_SESSION[KEY_EMAIL];
-			fputs($fp, $request, strlen($request));
+	$serversCount = count($SERVERS);
+	$currServer = -1;
 
-			// Analyse server's response
-			$response = trim(fgets($fp));   // Not used
-			fclose($fp);
-			
-			// Remove cookies and redirect to login page
-			session_destroy();
-			header('Location: ' . LOGIN_PAGE);
-			exit();
-			
-		} else {
-			echo "Error Connecting: " . $errNo . ": " . $errStr;
+	while (++$currServer < $serversCount) {
+		try {
+			// Connect to the remote host
+			$address = $SERVERS[$currServer][0];
+			$port = intval($SERVERS[$currServer][1]);
+			$errNo = $errStr = "";
+			$fp = stream_socket_client($address . ":" . $port, $errNo, $errStr);
+			if ($fp) {
+				// Send request to remove user
+				$request = REMOVE_USER . DELIMITER . $_SESSION[KEY_EMAIL];
+				fputs($fp, $request, strlen($request));
+
+				// Analyse server's response
+				$response = trim(fgets($fp));
+				// Not used
+				fclose($fp);
+
+				// Remove cookies and redirect to login page
+				session_destroy();
+				header('Location: ' . LOGIN_PAGE);
+				exit();
+				break;
+			} else {
+				//echo "Error Connecting: " . $errNo . ": " . $errStr;
+			}
+		} catch(exception $ex) {
+			//echo "<br> Error: " . $ex;
 		}
-	} catch(exception $ex) {
-		echo "<br> Error: " . $ex;
 	}
 
 	// Remove the user-to-be-followed tag
@@ -62,14 +70,14 @@ if (isset($_GET["key"]) && isset($_SESSION[KEY_EMAIL])) {
 							echo $form;
 						} else if (isset($_POST[KEY_QUERY])) {
 							echo "User not available";
-						}else if(isset($_SESSION[KEY_MESSAGE])){
-							echo "You're now following <b>".$_SESSION[KEY_MESSAGE]."<b>";
+						} else if (isset($_SESSION[KEY_MESSAGE])) {
+							echo "You're now following <b>" . $_SESSION[KEY_MESSAGE] . "<b>";
 							unset($_SESSION[KEY_MESSAGE]);
 						}
-						?>
-					</div>
-				</div>
-			</div>
-		</div>
-	</body>
+					?>
+</div>
+</div>
+</div>
+</div>
+</body>
 </html>
