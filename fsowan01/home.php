@@ -86,7 +86,7 @@ if (isset($_POST[KEY_TWEET]) && isset($_SESSION[KEY_EMAIL])) {
 									/* Retrieve and display tweets for users being followed */
 									// Get all users being followed
 									$request = GET_FOLLOWED_USERS . DELIMITER . $_SESSION[KEY_EMAIL];
-									$fp = stream_socket_client(SERVER_ADDR . ":" . SERVER_PORT, $errNo, $errStr, 0);
+									$fp = stream_socket_client($address . ":" . $port, $errNo, $errStr, 0);
 									fputs($fp, $request, strlen($request));
 									$response = trim(fgets($fp));
 									fclose($fp);
@@ -95,7 +95,7 @@ if (isset($_POST[KEY_TWEET]) && isset($_SESSION[KEY_EMAIL])) {
 									if (strcmp($response, GET_FOLLOWED_USERS . DELIMITER . FAILURE) != 0) {
 										$followedUsers = explode(DELIMITER, $response);
 										for ($K = 1; $K < count($followedUsers); $K++) {
-											$fp = stream_socket_client(SERVER_ADDR . ":" . SERVER_PORT, $errNo, $errStr, 0);
+											$fp = stream_socket_client($address . ":" . $port, $errNo, $errStr, 0);
 											$request = GET_USER_TWEETS . DELIMITER . trim($followedUsers[$K]);
 											fputs($fp, $request, strlen($request));
 											$response = trim(fgets($fp));
