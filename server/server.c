@@ -20,6 +20,7 @@
 #include<netinet/in.h>
 #include<sys/types.h>
 #include<sys/socket.h>
+#include<netdb.h>
 
 /*  Server Details     */
 #define TOTAL_CLIENTS   50
@@ -65,7 +66,7 @@ pthread_cond_t  cond_users_file = PTHREAD_COND_INITIALIZER;
 int   initialize_server(int);
 void  run_server(int);
 void* talk_to_client(void*);
-void* replicate_change(void*);
+void  broadcast_change(char*);
 void  authenticate_user(char*, char*);
 void  add_user(char*, char*);
 void  remove_user(char*, char*);
@@ -81,11 +82,14 @@ void  lower_case(char[]);
 void  trim(char*);
 void  log_error(char*);
 
+/*  Address-Port type  */
+typedef struct{char name[MAX_ENTITY_LENGTH]; int port;} ADDRESS;
+
 /*  Main   */
 int main(int argc, char* argv[])
 {
     // Prepare errors log file
-    freopen("error_log.txt", "a", stderr);
+    //freopen("error_log.txt", "a", stderr);
 
     // Set up server's port number
     FILE* config_file = fopen(CONFIG_FILENAME, "r");
@@ -108,6 +112,7 @@ int main(int argc, char* argv[])
     // Configure and start server
     int fd = initialize_server(port);
     if(fd == ERROR_FD) return 1;
+
     run_server(fd);
 
     return 0;
@@ -165,7 +170,7 @@ void* talk_to_client(void* fd)
     if(read(*cli_fd, request, BUFFER_SIZE))
     {
         // Analyse and respond to the request
-        //printf("REQUEST [%d](%s) ---> ", strlen(request), request);
+        printf("REQUEST [%d](%s) ---> \n", (int) strlen(request), request);
         char header[HEADER_SIZE+1];
         bzero(header, sizeof(header));
         strncpy(header, request, HEADER_SIZE);
@@ -195,6 +200,14 @@ void* talk_to_client(void* fd)
 
         //printf("RESPONSE [%d](%s)\n\n", strlen(response), response);
         if(write(*cli_fd, response, strlen(response)) < 0 ) log_error("Replying to client");
+
+        // Broadcast modifications to other servers
+        if(strcmp(header, ADD_USER) == 0 || strcmp(header, REMOVE_USER) == 0 ||
+           strcmp(header, FOLLOW_USER) == 0 || strcmp(header, UNFOLLOW_USERS) == 0 ||
+           strcmp(header, PUT_USER_TWEET) == 0)
+        {
+            broadcast_change(request);
+        }
     }
     else log_error("Talking to client");
     close(*cli_fd);
@@ -202,10 +215,50 @@ void* talk_to_client(void* fd)
 }
 
 /*  Send changes to other live servers   */
-void* replicate_change(void* arg)
+void broadcast_change(char* request)
 {
+    FILE* config_file = fopen(CONFIG_FILENAME, "r");
+    if(config_file == NULL) log_error("Configuration file not found");
 
+    int id, temp_id, temp_port;
+    char temp_name[MAX_ENTITY_LENGTH];
+    fscanf(config_file, "id =%d", &id); // read this server's id
+    while(!feof(config_file))
+    {
+        fscanf(config_file, "%d%d", &temp_id, &temp_port);
+        fgets(temp_name, MAX_ENTITY_LENGTH, config_file);
 
+        if(temp_id > id)
+        {
+            int fd = socket(AF_INET, SOCK_STREAM, 0);
+            if(fd < 0) log_error("Creating socket");
+
+            // Connect to the replication server
+            struct sockaddr_in server_addr;
+            bzero((char*) &server_addr, sizeof(server_addr));
+            server_addr.sin_family = AF_INET;
+            server_addr.sin_port = htons(temp_port);
+
+            trim(temp_name);
+            struct hostent *server = gethostbyname(temp_name);
+            if(server == NULL) log_error("Replication server");
+
+            bcopy((char*) server->h_addr, (char*) &server_addr.sin_addr.s_addr, server->h_length);
+
+            if(connect(fd, (struct sockaddr*) &server_addr, sizeof(server_addr)) < 0)
+                log_error("Connecting to replication server");
+
+            // Send broadcast message to the replication server
+            if(write(fd, request, strlen(request)) < 0)
+                log_error("Writing to replication server");
+
+            char buffer[BUFFER_SIZE];
+            read(fd, buffer, BUFFER_SIZE);
+            //printf("RES: [%s]\n", buffer);
+            close(fd);
+            break;  // Just to send to the next replication server
+        }
+    }
 }
 
 /*  Validate user and password pair   */
@@ -614,6 +667,11 @@ void trim(char* str)
 {
     int K = strlen(str) - 1;
     while(isspace(str[K])) str[K--] = '\0';
+    K = 0; while(isspace(str[K]) || str[K] == ' ') K++;
+    char temp[MAX_ENTITY_LENGTH];
+    bzero(temp, sizeof(temp));
+    strcpy(temp, str+K);
+    strcpy(str, temp);
 }
 
 /*  Dump error message into the standard error location     */
