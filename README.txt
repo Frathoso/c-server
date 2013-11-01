@@ -1,3 +1,5 @@
+A parallel and distributed server written in C using pthreads for the "Parralel and Distributed Systems" course taken in NYU-Polytechnic Institude, New York, USA.
+
 NB: Only (1) "SETUP" is essential for setting up the and running system.
 
 1. SETUP:
